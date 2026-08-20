@@ -1,0 +1,235 @@
+import { ClientSession, Model, Types } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument } from 'src/schemas/User/user.schema';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+
+
+@Injectable()
+export class UserRepositoryService {
+    constructor(
+        @InjectModel(User.name) private userModel: Model<UserDocument>,
+    ) { }
+
+
+    // Find an active user by email OR phone — HarvestHub logs in with either,
+    // since phone is the primary identifier but email is optional (see users.md)
+    async findUserByIdentifier(identifier: string): Promise<UserDocument | null> {
+        try {
+            const user = await this.userModel.findOne({
+                isActive: true,
+                $or: [{ email: identifier }, { phone: identifier }],
+            }).exec();
+            return user;
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find user by identifier', error);
+        }
+    }
+
+
+    // Find an active user by phone
+    async findUserByPhone(phone: string): Promise<UserDocument | null> {
+        try {
+            return await this.userModel.findOne({ phone, isActive: true }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find user by phone', error);
+        }
+    }
+
+
+    // Find an active user by email
+    async findUserByEmail(email: string): Promise<UserDocument | null> {
+        try {
+            return await this.userModel.findOne({ email, isActive: true }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find user by email', error);
+        }
+    }
+
+
+    // Update user
+    async updateUser(id: string, updates: Partial<User>, session?: ClientSession): Promise<UserDocument | null> {
+        try {
+            const updatedUser = await this.userModel.findByIdAndUpdate(id, updates, { new: true, session }).exec();
+            return updatedUser;
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to update user', error);
+        }
+    }
+
+
+    // Update user tokens
+    async updateUserTokens(userId: string, accessToken: string, refreshToken: string): Promise<void> {
+        try {
+            const updatedUser = await this.userModel.findByIdAndUpdate(
+                userId,
+                {
+                    accessToken,
+                    refreshToken,
+                },
+                { new: true }
+            ).exec();
+
+            if (!updatedUser) {
+                throw new NotFoundException(`User with id ${userId} not found`);
+            }
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to update user tokens', error);
+        }
+    }
+
+
+    // Find user by refresh token
+    async findUserByRefreshToken(refreshToken: string): Promise<UserDocument | null> {
+        try {
+            const user = await this.userModel.findOne({
+                refreshToken,
+                isActive: true
+            }).exec();
+            return user;
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find user by refresh token', error);
+        }
+    }
+
+
+    // Clear user tokens (for logout)
+    async clearUserTokens(userId: string): Promise<void> {
+        try {
+            const updatedUser = await this.userModel.findByIdAndUpdate(
+                userId,
+                {
+                    accessToken: null,
+                    refreshToken: null,
+                },
+                { new: true }
+            ).exec();
+
+            if (!updatedUser) {
+                throw new NotFoundException(`User with id ${userId} not found`);
+            }
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to clear user tokens', error);
+        }
+    }
+
+
+    // Update user password
+    async updateUserPassword(id: string, password: string): Promise<UserDocument | null> {
+        try {
+            const updatedPassword = await this.userModel.findByIdAndUpdate(
+                id,
+                {
+                    password,
+                    isFirstLogin: false,
+                    lastPasswordChange: new Date(),
+                },
+                { new: true }
+            ).exec();
+
+            return updatedPassword;
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to update user password', error);
+        }
+    }
+
+
+    // Update Last Login
+    async updateLastLogin(id: string): Promise<void> {
+        try {
+            const updatedUser = await this.userModel.findByIdAndUpdate(
+                id,
+                { lastLogin: new Date() }
+            ).exec();
+
+            if (!updatedUser) {
+                throw new NotFoundException(`User with id ${id} not found`);
+            }
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new InternalServerErrorException('Failed to update last login', error);
+        }
+    }
+
+
+    // Find user by id
+    async findById(id: string): Promise<UserDocument | null> {
+        try {
+            const user = await this.userModel.findById(id).exec();
+            return user;
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find user by id', error);
+        }
+    }
+
+
+    // Set password reset token
+    async setPasswordResetToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
+        try {
+            const updatedUser = await this.userModel.findByIdAndUpdate(
+                userId,
+                {
+                    resetPasswordTokenHash: tokenHash,
+                    resetPasswordTokenExpiresAt: expiresAt,
+                },
+                { new: true }
+            ).exec();
+
+            if (!updatedUser) {
+                throw new NotFoundException(`User with id ${userId} not found`);
+            }
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new InternalServerErrorException('Failed to set password reset token', error);
+        }
+    }
+
+
+    // Reset password (via forgot-password flow)
+    async resetPassword(userId: string, hashedPassword: string): Promise<void> {
+        try {
+            const updatedUser = await this.userModel.findByIdAndUpdate(
+                userId,
+                {
+                    password: hashedPassword,
+                    resetPasswordTokenHash: null,
+                    resetPasswordTokenExpiresAt: null,
+                    accessToken: null,
+                    refreshToken: null,
+                    lastPasswordChange: new Date(),
+                },
+                { new: true }
+            ).exec();
+
+            if (!updatedUser) {
+                throw new NotFoundException(`User with id ${userId} not found`);
+            }
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new InternalServerErrorException('Failed to reset password', error);
+        }
+    }
+
+
+    // Start Session
+    async startSession() {
+        return await this.userModel.db.startSession();
+    }
+
+
+    // Create User
+    async create(data: Partial<User>, session?: ClientSession): Promise<UserDocument> {
+        try {
+            const user = new this.userModel(data);
+            return await user.save({ session });
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to create user', error);
+        }
+    }
+
+}
