@@ -47,3 +47,41 @@ export enum MediaStatus {
   UPLOAD_COMPLETE = 'UPLOAD_COMPLETE',
   UPLOAD_FAILED = 'UPLOAD_FAILED'
 }
+
+// database/categories.md
+export enum PerishabilityTier {
+  PERISHABLE = 'perishable',
+  SEMI_PERISHABLE = 'semi_perishable',
+  NON_PERISHABLE = 'non_perishable',
+}
+
+export enum UnitOfMeasure {
+  KG = 'kg',
+  QUINTAL = 'quintal',
+  TON = 'ton',
+  DOZEN = 'dozen',
+  BUNDLE = 'bundle',
+  LITER = 'liter',
+}
+
+// database/products.md — full target lifecycle. Only submitted/under_review/
+// changes_requested/rejected have transitions today (Catalog module, 03); the
+// rest are driven by Inspection (04) and Bidding Engine (06), not built yet.
+export enum ProductStatus {
+  SUBMITTED = 'submitted',
+  UNDER_REVIEW = 'under_review',
+  INSPECTION_SCHEDULED = 'inspection_scheduled',
+  INSPECTED = 'inspected',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  CHANGES_REQUESTED = 'changes_requested',
+  LISTED = 'listed',
+  BIDDING_LIVE = 'bidding_live',
+  SOLD = 'sold',
+  UNSOLD = 'unsold',
+}
+
+export enum CollectionMethod {
+  DROP_OFF = 'drop_off',
+  PICKUP_REQUEST = 'pickup_request',
+}

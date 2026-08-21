@@ -18,6 +18,18 @@ docs this scaffold was built against).
   create/update/list/get with District Admin access scoped to their own
   district (enforced by loading their `User.districtId`, since it isn't in the
   JWT payload).
+- **Catalog Management module** (`src/api/catalog-management/`) — Super Admin
+  CRUD on the category/subcategory taxonomy (bilingual name, perishability
+  tier, default unit); Farmer product submission and editing (create, edit
+  while `submitted`/`under_review`/`changes_requested`/`rejected`, list own,
+  get own) with `biddingEndTime` computed server-side as `biddingStartTime +
+  30 min`; and a District Admin/Super Admin review queue (`start-review`,
+  `request-changes`, `reject`, scoped to district for District Admin) that
+  writes to a new generic `audit-logs` collection. Editing a `rejected` or
+  `changes_requested` product resubmits it (back to `submitted`), per the
+  requirement doc. Everything past that — `inspection_scheduled` through
+  `sold`/`unsold` — is intentionally not implemented; those transitions belong
+  to Inspection (04) and Bidding Engine (06).
 - **Roles** (`src/utils/enum.ts`) — `SUPER_ADMIN`, `DISTRICT_ADMIN`, `INSPECTOR`,
   `FARMER`, `BUYER`, `DELIVERY_PARTNER`. `SUPER_ADMIN`/`FARMER`/`BUYER`/
   `DELIVERY_PARTNER`/`DISTRICT_ADMIN` have a working module today —
@@ -37,22 +49,27 @@ docs this scaffold was built against).
 
 ## What's intentionally NOT built yet
 
-Everything in `modules/03` through `modules/12` (catalog, inspections,
-bidding, payments/escrow, orders/delivery, notifications, disputes, admin
-reporting, localization) — those are real business modules to build next,
-using the same layering pattern demonstrated in the auth/district-management
-endpoints. `database/*.md` describes the target schema for each of those
-collections.
+Everything in `modules/04` through `modules/12` (inspections, collection
+center inventory, bidding, payments/escrow, orders/delivery, notifications,
+disputes, admin reporting, localization) — those are real business modules to
+build next, using the same layering pattern demonstrated so far.
+`database/*.md` describes the target schema for each of those collections.
+`product-interests` (buyer "mark interested" + reminder tracking) is deferred
+to whichever of Bidding Engine (06) / Notification (09) actually needs it —
+its only stated purpose is feeding a reminder those modules haven't built yet.
 
 Also not built within District Management itself: the business rule blocking
 district deactivation while it has products in an active lifecycle state
-(needs the Catalog module, module 03 — see the `TODO` in
-`src/services/district-service/district.service.ts`).
+(needs the Catalog module — done now — but the check itself is still a `TODO`
+in `src/services/district-service/district.service.ts`; wiring it up is a
+small follow-up, not a new module).
 
-Also not built: OTP-based phone verification (needs the Notification module),
-and dedicated `FarmerProfile`/`BuyerProfile`/`DeliveryPartnerProfile` schemas
-(see `database/farmer-profiles.md` etc.) — those roles currently only have the
-base `User` fields.
+Also not built: OTP-based phone verification (needs the Notification module —
+this also means `createProductAPI` will reject every real farmer until OTP
+verification exists, since `isPhoneVerified` defaults `false`), and dedicated
+`FarmerProfile`/`BuyerProfile`/`DeliveryPartnerProfile` schemas (see
+`database/farmer-profiles.md` etc.) — those roles currently only have the base
+`User` fields.
 
 ## Setup
 

@@ -5,6 +5,7 @@ import { FarmerModule } from './user/farmer/farmer.module';
 import { BuyerModule } from './user/buyer/buyer.module';
 import { DeliveryPartnerModule } from './user/delivery-partner/delivery-partner.module';
 import { DistrictManagementModule } from './district-management/district-management.module';
+import { CatalogManagementModule } from './catalog-management/catalog-management.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { DistrictManagementModule } from './district-management/district-managem
     BuyerModule,
     DeliveryPartnerModule,
     DistrictManagementModule,
+    CatalogManagementModule,
   ],
   controllers: [],
   providers: [],
