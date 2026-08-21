@@ -9,6 +9,8 @@ import { AdminService } from "./user-service/admin/admin.service";
 import { FarmerService } from "./user-service/farmer/farmer.service";
 import { BuyerService } from "./user-service/buyer/buyer.service";
 import { DeliveryPartnerService } from "./user-service/delivery-partner/delivery-partner.service";
+import { DistrictService } from "./district-service/district.service";
+import { CollectionCenterService } from "./collection-center-service/collection-center.service";
 import { ConfigService } from "src/config/config.service";
 
 // Modules
@@ -37,6 +39,8 @@ import { RepositoryModule } from "src/repositories/repository.module";
         FarmerService,
         BuyerService,
         DeliveryPartnerService,
+        DistrictService,
+        CollectionCenterService,
     ],
     exports: [
         AuthService,
@@ -46,6 +50,8 @@ import { RepositoryModule } from "src/repositories/repository.module";
         FarmerService,
         BuyerService,
         DeliveryPartnerService,
+        DistrictService,
+        CollectionCenterService,
     ],
 })
 export class ServiceModule { }

@@ -1,5 +1,6 @@
 import { ClientSession, Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { UserRole } from 'src/utils/enum';
 import { User, UserDocument } from 'src/schemas/User/user.schema';
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 
@@ -229,6 +230,33 @@ export class UserRepositoryService {
             return await user.save({ session });
         } catch (error) {
             throw new InternalServerErrorException('Failed to create user', error);
+        }
+    }
+
+
+    // Clear a user's district assignment — used when reassigning a District
+    // Admin away from the district they currently administer (see
+    // DistrictService.assignDistrictAdminAPI)
+    async clearUserDistrict(userId: string): Promise<void> {
+        try {
+            await this.userModel.findByIdAndUpdate(userId, { $unset: { districtId: 1 } }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to clear user district', error);
+        }
+    }
+
+
+    // Count active users of a given role within a district — backs the
+    // district directory's summary stats (active farmers/buyers)
+    async countActiveByDistrictAndRole(districtId: string, role: UserRole): Promise<number> {
+        try {
+            return await this.userModel.countDocuments({
+                districtId: new Types.ObjectId(districtId),
+                role,
+                isActive: true,
+            }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to count users by district and role', error);
         }
     }
 
