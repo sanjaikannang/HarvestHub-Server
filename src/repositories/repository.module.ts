@@ -9,6 +9,8 @@ import { CollectionCenterRepositoryService } from "./collection-center-repositor
 import { CategoryRepositoryService } from "./category-repository/category.repository";
 import { ProductRepositoryService } from "./product-repository/product.repository";
 import { AuditLogRepositoryService } from "./audit-log-repository/audit-log.repository";
+import { InspectionRepositoryService } from "./inspection-repository/inspection.repository";
+import { CollectionCenterInventoryRepositoryService } from "./collection-center-inventory-repository/collection-center-inventory.repository";
 
 // Schemas
 import { User, UserSchema } from "src/schemas/User/user.schema";
@@ -18,11 +20,13 @@ import { CollectionCenter, CollectionCenterSchema } from "src/schemas/Collection
 import { Category, CategorySchema } from "src/schemas/Category/category.schema";
 import { Product, ProductSchema } from "src/schemas/Product/product.schema";
 import { AuditLog, AuditLogSchema } from "src/schemas/AuditLog/audit-log.schema";
+import { Inspection, InspectionSchema } from "src/schemas/Inspection/inspection.schema";
+import { CollectionCenterInventory, CollectionCenterInventorySchema } from "src/schemas/CollectionCenterInventory/collection-center-inventory.schema";
 
 // Single aggregator module for every repository in the app — feature modules
 // import this once rather than wiring MongooseModule.forFeature() themselves.
-// Add new schemas/repositories here as HarvestHub's other modules
-// (inspections, bidding, etc.) get built out.
+// Add new schemas/repositories here as HarvestHub's other modules (bidding,
+// payments, orders, etc.) get built out.
 @Module({
     imports: [
         MongooseModule.forFeature([
@@ -33,6 +37,8 @@ import { AuditLog, AuditLogSchema } from "src/schemas/AuditLog/audit-log.schema"
             { name: Category.name, schema: CategorySchema },
             { name: Product.name, schema: ProductSchema },
             { name: AuditLog.name, schema: AuditLogSchema },
+            { name: Inspection.name, schema: InspectionSchema },
+            { name: CollectionCenterInventory.name, schema: CollectionCenterInventorySchema },
         ]),
     ],
     controllers: [],
@@ -44,6 +50,8 @@ import { AuditLog, AuditLogSchema } from "src/schemas/AuditLog/audit-log.schema"
         CategoryRepositoryService,
         ProductRepositoryService,
         AuditLogRepositoryService,
+        InspectionRepositoryService,
+        CollectionCenterInventoryRepositoryService,
     ],
     exports: [
         UserRepositoryService,
@@ -53,6 +61,8 @@ import { AuditLog, AuditLogSchema } from "src/schemas/AuditLog/audit-log.schema"
         CategoryRepositoryService,
         ProductRepositoryService,
         AuditLogRepositoryService,
+        InspectionRepositoryService,
+        CollectionCenterInventoryRepositoryService,
     ],
 })
 export class RepositoryModule { }

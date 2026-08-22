@@ -246,6 +246,21 @@ export class UserRepositoryService {
     }
 
 
+    // Find active users of a given role, optionally scoped to a district —
+    // backs District Admin's Inspector directory (see AuthService.listInspectorsAPI)
+    async findByRoleAndDistrict(role: UserRole, districtId?: string): Promise<UserDocument[]> {
+        try {
+            const filter: Record<string, unknown> = { role, isActive: true };
+            if (districtId) {
+                filter.districtId = new Types.ObjectId(districtId);
+            }
+            return await this.userModel.find(filter).sort({ name: 1 }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find users by role and district', error);
+        }
+    }
+
+
     // Count active users of a given role within a district — backs the
     // district directory's summary stats (active farmers/buyers)
     async countActiveByDistrictAndRole(districtId: string, role: UserRole): Promise<number> {

@@ -326,4 +326,81 @@ export class AuthService {
         };
     }
 
+
+    // Create Inspector API Endpoint (District Admin) — onboarded, not
+    // self-registered; always assigned to the creating admin's own district
+    // (see modules/01-auth-user-management.md and modules/04-inspection-management.md)
+    async createInspectorAPI(districtAdminUserId: string, data: { name: string; phone: string; email?: string; password: string }) {
+        const districtAdmin = await this.userRepositoryService.findById(districtAdminUserId);
+        if (!districtAdmin?.districtId) {
+            throw new BadRequestException('You must be assigned to a district before you can add an Inspector');
+        }
+
+        const existingByPhone = await this.userRepositoryService.findUserByPhone(data.phone);
+        if (existingByPhone) {
+            throw new ConflictException('An account with this phone number already exists');
+        }
+
+        if (data.email) {
+            const existingByEmail = await this.userRepositoryService.findUserByEmail(data.email);
+            if (existingByEmail) {
+                throw new ConflictException('An account with this email already exists');
+            }
+        }
+
+        const passwordValidation = this.passwordService.validatePasswordStrength(data.password);
+        if (!passwordValidation.isValid) {
+            throw new BadRequestException(passwordValidation.message);
+        }
+
+        const hashedPassword = await this.passwordService.hashPassword(data.password);
+
+        const inspector = await this.userRepositoryService.create({
+            name: data.name,
+            phone: data.phone,
+            email: data.email,
+            password: hashedPassword,
+            role: UserRole.INSPECTOR,
+            districtId: districtAdmin.districtId,
+            isActive: true,
+            isPhoneVerified: false,
+            isFirstLogin: true,
+            createdBy: districtAdmin._id as Types.ObjectId,
+        });
+
+        return {
+            id: (inspector._id as Types.ObjectId).toString(),
+            name: inspector.name,
+            phone: inspector.phone,
+            email: inspector.email,
+            role: inspector.role,
+            districtId: inspector.districtId?.toString(),
+        };
+    }
+
+
+    // List Inspectors API Endpoint — District Admin: own district only,
+    // Super Admin: all or filtered by districtId
+    async listInspectorsAPI(requestingUser: { sub: string; role: UserRole }, districtId?: string) {
+        let scopedDistrictId = districtId;
+
+        if (requestingUser.role === UserRole.DISTRICT_ADMIN) {
+            const admin = await this.userRepositoryService.findById(requestingUser.sub);
+            if (!admin?.districtId) {
+                throw new BadRequestException('You must be assigned to a district first');
+            }
+            scopedDistrictId = admin.districtId.toString();
+        }
+
+        const inspectors = await this.userRepositoryService.findByRoleAndDistrict(UserRole.INSPECTOR, scopedDistrictId);
+
+        return inspectors.map((inspector) => ({
+            id: (inspector._id as Types.ObjectId).toString(),
+            name: inspector.name,
+            phone: inspector.phone,
+            email: inspector.email,
+            districtId: inspector.districtId?.toString(),
+        }));
+    }
+
 }

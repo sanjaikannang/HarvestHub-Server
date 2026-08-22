@@ -85,3 +85,26 @@ export enum CollectionMethod {
   DROP_OFF = 'drop_off',
   PICKUP_REQUEST = 'pickup_request',
 }
+
+// database/inspections.md — the inspector's own recommendation
+export enum RecommendedVerdict {
+  APPROVE = 'approve',
+  REJECT = 'reject',
+  REQUEST_CHANGES = 'request_changes',
+}
+
+// database/inspections.md — the district admin's final, binding call
+export enum AdminDecision {
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  CHANGES_REQUESTED = 'changes_requested',
+}
+
+// database/collection-center-inventory.md — only `in_storage` is written today
+// (Inspection module, 04, on approval); reserved_for_sale/dispatched belong to
+// modules 06/08, not built yet.
+export enum InventoryStatus {
+  IN_STORAGE = 'in_storage',
+  RESERVED_FOR_SALE = 'reserved_for_sale',
+  DISPATCHED = 'dispatched',
+}

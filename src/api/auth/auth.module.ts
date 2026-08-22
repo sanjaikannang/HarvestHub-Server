@@ -19,6 +19,8 @@ import { RefreshTokenController } from './refresh-token/refresh-token.controller
 import { ChangePasswordController } from './change-password/change-password.controller';
 import { ForgotPasswordController } from './forgot-password/forgot-password.controller';
 import { ResetPasswordController } from './reset-password/reset-password.controller';
+import { CreateInspectorController } from './create-inspector/create-inspector.controller';
+import { ListInspectorsController } from './list-inspectors/list-inspectors.controller';
 
 // Guards
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
@@ -51,6 +53,8 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         ChangePasswordController,
         ForgotPasswordController,
         ResetPasswordController,
+        CreateInspectorController,
+        ListInspectorsController,
     ],
     providers: [
         ConfigService,

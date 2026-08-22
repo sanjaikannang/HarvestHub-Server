@@ -271,6 +271,14 @@ export class ProductService {
 
         if (requestingUser.role === UserRole.DISTRICT_ADMIN) {
             await this.districtService.assertOwnDistrict(requestingUser.sub, product.districtId.toString());
+            return;
+        }
+
+        if (requestingUser.role === UserRole.INSPECTOR) {
+            const inspector = await this.userRepositoryService.findById(requestingUser.sub);
+            if (inspector?.districtId?.toString() !== product.districtId.toString()) {
+                throw new ForbiddenException('You do not have access to this product');
+            }
         }
     }
 

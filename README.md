@@ -28,16 +28,34 @@ docs this scaffold was built against).
   writes to a new generic `audit-logs` collection. Editing a `rejected` or
   `changes_requested` product resubmits it (back to `submitted`), per the
   requirement doc. Everything past that — `inspection_scheduled` through
-  `sold`/`unsold` — is intentionally not implemented; those transitions belong
-  to Inspection (04) and Bidding Engine (06).
+  `sold`/`unsold` — is driven by Inspection (04, done now) and Bidding Engine
+  (06, not built).
+- **Inspection Management module** (`src/api/inspection-management/`) — District
+  Admin/Super Admin schedules an inspection against a `submitted`/`under_review`
+  product (assigns an Inspector, who must belong to the same district — enforced
+  business rule); the assigned Inspector records findings (verified
+  quantity/grade/condition/photos + a recommended verdict) via `/inspections/mine`
+  and `PATCH /inspections/:id/findings`; District Admin/Super Admin then makes the
+  binding decision (`PATCH /inspections/:id/decision`) — approve (locks
+  `verifiedQuantity`/`qualityGrade`/`finalStartingPrice` onto the product and logs
+  a receipt into a new minimal `collection-center-inventory` collection),
+  reject, or request changes (both reuse the Catalog module's
+  `rejectionReason`/`changeRequestNotes` fields, so a farmer's resubmit-on-edit
+  flow from module 03 just works here too). A decision requires findings to
+  already be recorded, and each inspection can only be decided once.
+  `collection-center-inventory` here is a deliberately thin slice (just enough
+  to log the receipt) — full inventory CRUD/reporting is Collection Center
+  Management (05), not built.
+- **Inspector accounts** — since District Admin/Inspector account creation
+  didn't exist yet anywhere and Inspection Management needs real Inspector
+  users to assign, added `POST /auth/create-inspector` (District Admin only,
+  always assigned to the creating admin's own district) and
+  `GET /auth/inspectors` (District Admin: own district, Super Admin: all or
+  filtered) to `src/api/auth/`. `DISTRICT_ADMIN` account creation is still
+  missing — `districts/:id/assign-admin` still expects a user that already has
+  that role.
 - **Roles** (`src/utils/enum.ts`) — `SUPER_ADMIN`, `DISTRICT_ADMIN`, `INSPECTOR`,
-  `FARMER`, `BUYER`, `DELIVERY_PARTNER`. `SUPER_ADMIN`/`FARMER`/`BUYER`/
-  `DELIVERY_PARTNER`/`DISTRICT_ADMIN` have a working module today —
-  `INSPECTOR` is guardable but has no module yet (depends on Inspection
-  Management, module 04). Note: there's still no API to create a
-  `DISTRICT_ADMIN` account (self-registration is Farmer/Buyer-only, and
-  admin-onboarded account creation for District Admin/Inspector isn't built)
-  — `districts/:id/assign-admin` expects a user that already has that role.
+  `FARMER`, `BUYER`, `DELIVERY_PARTNER` all have at least one working module now.
 - **One working example endpoint per existing role** — `GET /<role>/profile`,
   following the controller → service → repository → schema layering convention.
   None of the roles have a dedicated profile schema yet (see below) — the
@@ -49,14 +67,15 @@ docs this scaffold was built against).
 
 ## What's intentionally NOT built yet
 
-Everything in `modules/04` through `modules/12` (inspections, collection
-center inventory, bidding, payments/escrow, orders/delivery, notifications,
-disputes, admin reporting, localization) — those are real business modules to
-build next, using the same layering pattern demonstrated so far.
-`database/*.md` describes the target schema for each of those collections.
-`product-interests` (buyer "mark interested" + reminder tracking) is deferred
-to whichever of Bidding Engine (06) / Notification (09) actually needs it —
-its only stated purpose is feeding a reminder those modules haven't built yet.
+Everything in `modules/05` through `modules/12` (full Collection Center
+inventory management, bidding, payments/escrow, orders/delivery,
+notifications, disputes, admin reporting, localization) — those are real
+business modules to build next, using the same layering pattern demonstrated
+so far. `database/*.md` describes the target schema for each of those
+collections. `product-interests` (buyer "mark interested" + reminder
+tracking) is deferred to whichever of Bidding Engine (06) / Notification (09)
+actually needs it — its only stated purpose is feeding a reminder those
+modules haven't built yet.
 
 Also not built within District Management itself: the business rule blocking
 district deactivation while it has products in an active lifecycle state
