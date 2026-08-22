@@ -12,6 +12,7 @@ import { CollectionCenterManagementModule } from './collection-center-management
 import { BiddingEngineModule } from './bidding-engine/bidding-engine.module';
 import { PaymentEscrowModule } from './payment-escrow/payment-escrow.module';
 import { NotificationManagementModule } from './notification-management/notification-management.module';
+import { DisputeResolutionModule } from './dispute-resolution/dispute-resolution.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { NotificationManagementModule } from './notification-management/notifica
     BiddingEngineModule,
     PaymentEscrowModule,
     NotificationManagementModule,
+    DisputeResolutionModule,
   ],
   controllers: [],
   providers: [],

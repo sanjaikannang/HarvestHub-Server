@@ -167,9 +167,10 @@ export enum NotificationChannel {
 
 // One entry per event in modules/09-notification/requirement.md — matches a
 // notification-templates.templateKey. "Interested-product" bidding reminders
-// and district-admin dispute alerts are intentionally not implemented: the
-// former needs a buyer watchlist/follow feature that doesn't exist, the
-// latter needs the Dispute module, neither built yet.
+// are intentionally not implemented: they need a buyer watchlist/follow
+// feature that doesn't exist. District-admin/Super-Admin dispute alerts are
+// covered by the DISPUTE_* entries below, added once the Dispute module (10)
+// existed to trigger them.
 export enum NotificationType {
   SUBMISSION_RECEIVED = 'submission_received',
   INSPECTION_SCHEDULED = 'inspection_scheduled',
@@ -189,4 +190,22 @@ export enum NotificationType {
   INSPECTION_REPORT_READY = 'inspection_report_ready',
   DELIVERY_PARTNER_UNAVAILABLE = 'delivery_partner_unavailable',
   NEW_ORDER_ASSIGNED = 'new_order_assigned',
+  DISPUTE_RAISED = 'dispute_raised',
+  DISPUTE_ESCALATED = 'dispute_escalated',
+  DISPUTE_STATUS_UPDATE = 'dispute_status_update',
+}
+
+// database/disputes.md
+export enum DisputeReason {
+  QUALITY_ISSUE = 'quality_issue',
+  QUANTITY_MISMATCH = 'quantity_mismatch',
+  DAMAGED_IN_TRANSIT = 'damaged_in_transit',
+}
+
+export enum DisputeStatus {
+  RAISED = 'raised',
+  UNDER_REVIEW = 'under_review',
+  RESOLVED_REFUND = 'resolved_refund',
+  RESOLVED_REJECTED = 'resolved_rejected',
+  ESCALATED = 'escalated',
 }

@@ -220,4 +220,28 @@ export const DEFAULT_NOTIFICATION_TEMPLATES: SeedTemplate[] = [
             ta: { title: 'புதிய டெலிவரி ஒதுக்கப்பட்டது', message: '{{productName}} ஐ {{city}} க்கு டெலிவரி செய்ய ஒதுக்கப்பட்டுள்ளீர்கள்.' },
         },
     },
+    {
+        templateKey: NotificationType.DISPUTE_RAISED,
+        channel: NotificationChannel.IN_APP,
+        translations: {
+            en: { title: 'New dispute raised', message: 'A dispute was raised for {{productName}}: {{reason}}' },
+            ta: { title: 'புதிய புகார் பதிவு செய்யப்பட்டது', message: '{{productName}} க்கு புகார் பதிவு செய்யப்பட்டது: {{reason}}' },
+        },
+    },
+    {
+        templateKey: NotificationType.DISPUTE_ESCALATED,
+        channel: NotificationChannel.IN_APP,
+        translations: {
+            en: { title: 'Dispute escalated', message: 'A dispute for {{productName}} has been escalated to you for review.' },
+            ta: { title: 'புகார் மேலிடத்திற்கு அனுப்பப்பட்டது', message: '{{productName}} க்கான புகார் உங்கள் மதிப்பாய்வுக்கு அனுப்பப்பட்டுள்ளது.' },
+        },
+    },
+    {
+        templateKey: NotificationType.DISPUTE_STATUS_UPDATE,
+        channel: NotificationChannel.IN_APP,
+        translations: {
+            en: { title: 'Dispute update', message: 'Your dispute for {{productName}} is now {{status}}.' },
+            ta: { title: 'புகார் புதுப்பிப்பு', message: '{{productName}} க்கான உங்கள் புகார் இப்போது {{status}}.' },
+        },
+    },
 ];

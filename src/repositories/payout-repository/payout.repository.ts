@@ -79,4 +79,48 @@ export class PayoutRepositoryService {
         }
     }
 
+
+    // Full-refund dispute resolution — claws back the whole payout (see
+    // DisputeService.resolveDisputeAPI)
+    async reverse(id: string, reason: string): Promise<PayoutDocument | null> {
+        try {
+            const updated = await this.payoutModel.findByIdAndUpdate(
+                id,
+                { status: PayoutStatus.REVERSED, holdReason: reason },
+                { new: true },
+            ).exec();
+            if (!updated) {
+                throw new NotFoundException(`Payout with id ${id} not found`);
+            }
+            return updated;
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new InternalServerErrorException('Failed to reverse payout', error);
+        }
+    }
+
+
+    // Partial-refund dispute resolution — reduces the net payout without
+    // changing its status (see DisputeService.resolveDisputeAPI)
+    async adjustNetAmount(id: string, newNetAmount: number, reason: string): Promise<PayoutDocument | null> {
+        try {
+            const updated = await this.payoutModel.findByIdAndUpdate(
+                id,
+                { netPayoutAmount: newNetAmount, holdReason: reason },
+                { new: true },
+            ).exec();
+            if (!updated) {
+                throw new NotFoundException(`Payout with id ${id} not found`);
+            }
+            return updated;
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new InternalServerErrorException('Failed to adjust payout amount', error);
+        }
+    }
+
 }

@@ -20,6 +20,7 @@ import { PlatformSettingsRepositoryService } from "./platform-settings-repositor
 import { DeliveryPartnerProfileRepositoryService } from "./delivery-partner-profile-repository/delivery-partner-profile.repository";
 import { NotificationRepositoryService } from "./notification-repository/notification.repository";
 import { NotificationTemplateRepositoryService } from "./notification-template-repository/notification-template.repository";
+import { DisputeRepositoryService } from "./dispute-repository/dispute.repository";
 
 // Schemas
 import { User, UserSchema } from "src/schemas/User/user.schema";
@@ -40,6 +41,7 @@ import { PlatformSettings, PlatformSettingsSchema } from "src/schemas/PlatformSe
 import { DeliveryPartnerProfile, DeliveryPartnerProfileSchema } from "src/schemas/DeliveryPartnerProfile/delivery-partner-profile.schema";
 import { Notification, NotificationSchema } from "src/schemas/Notification/notification.schema";
 import { NotificationTemplate, NotificationTemplateSchema } from "src/schemas/NotificationTemplate/notification-template.schema";
+import { Dispute, DisputeSchema } from "src/schemas/Dispute/dispute.schema";
 
 // Single aggregator module for every repository in the app — feature modules
 // import this once rather than wiring MongooseModule.forFeature() themselves.
@@ -66,6 +68,7 @@ import { NotificationTemplate, NotificationTemplateSchema } from "src/schemas/No
             { name: DeliveryPartnerProfile.name, schema: DeliveryPartnerProfileSchema },
             { name: Notification.name, schema: NotificationSchema },
             { name: NotificationTemplate.name, schema: NotificationTemplateSchema },
+            { name: Dispute.name, schema: DisputeSchema },
         ]),
     ],
     controllers: [],
@@ -88,6 +91,7 @@ import { NotificationTemplate, NotificationTemplateSchema } from "src/schemas/No
         DeliveryPartnerProfileRepositoryService,
         NotificationRepositoryService,
         NotificationTemplateRepositoryService,
+        DisputeRepositoryService,
     ],
     exports: [
         UserRepositoryService,
@@ -108,6 +112,7 @@ import { NotificationTemplate, NotificationTemplateSchema } from "src/schemas/No
         DeliveryPartnerProfileRepositoryService,
         NotificationRepositoryService,
         NotificationTemplateRepositoryService,
+        DisputeRepositoryService,
     ],
 })
 export class RepositoryModule { }
