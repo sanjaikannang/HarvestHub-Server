@@ -166,8 +166,12 @@ export class InspectionService {
         const productId = inspection.productId.toString();
 
         if (decision === AdminDecision.APPROVED) {
+            // Goes straight to Listed, not just Approved — by the time inventory is
+            // logged below (in the same call), the only gate on Listed ("goods
+            // received, in_storage" — database/collection-center-inventory.md) is
+            // already satisfied, so there's no separate waiting step in between.
             await this.productRepositoryService.updateDetails(productId, {
-                status: ProductStatus.APPROVED,
+                status: ProductStatus.LISTED,
                 verifiedQuantity: inspection.verifiedQuantity,
                 qualityGrade: inspection.qualityGrade,
                 finalStartingPrice: (await this.productRepositoryService.findById(productId))!.startingPrice,

@@ -82,6 +82,28 @@ export class ProductRepositoryService {
     }
 
 
+    // Products ready for their bidding session to open — Listed and past their
+    // scheduled start time (see BiddingService's scheduler)
+    async findDueForBidding(now: Date): Promise<ProductDocument[]> {
+        try {
+            return await this.productModel.find({ status: ProductStatus.LISTED, biddingStartTime: { $lte: now } }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find products due for bidding', error);
+        }
+    }
+
+
+    // Marketplace browse — products currently for sale or awaiting their
+    // session, for Buyers (any district, any role beyond Farmer/Admin review)
+    async findByStatuses(statuses: ProductStatus[]): Promise<ProductDocument[]> {
+        try {
+            return await this.productModel.find({ status: { $in: statuses } }).sort({ biddingStartTime: 1 }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to list marketplace products', error);
+        }
+    }
+
+
     // Transition status, optionally setting/clearing rejectionReason and changeRequestNotes
     async updateStatus(
         id: string,

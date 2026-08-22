@@ -9,6 +9,7 @@ import { DistrictManagementModule } from './district-management/district-managem
 import { CatalogManagementModule } from './catalog-management/catalog-management.module';
 import { InspectionManagementModule } from './inspection-management/inspection-management.module';
 import { CollectionCenterManagementModule } from './collection-center-management/collection-center-management.module';
+import { BiddingEngineModule } from './bidding-engine/bidding-engine.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CollectionCenterManagementModule } from './collection-center-management
     CatalogManagementModule,
     InspectionManagementModule,
     CollectionCenterManagementModule,
+    BiddingEngineModule,
   ],
   controllers: [],
   providers: [],

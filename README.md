@@ -28,8 +28,10 @@ docs this scaffold was built against).
   writes to a new generic `audit-logs` collection. Editing a `rejected` or
   `changes_requested` product resubmits it (back to `submitted`), per the
   requirement doc. Everything past that — `inspection_scheduled` through
-  `sold`/`unsold` — is driven by Inspection (04, done now) and Bidding Engine
-  (06, not built).
+  `sold`/`unsold` — is driven by Inspection (04) and Bidding Engine (06), both
+  done now. Also added `GET /products/marketplace` (any authenticated role,
+  no district/ownership scoping) — Buyers had no way to browse what's for
+  sale until Bidding Engine needed it.
 - **Inspection Management module** (`src/api/inspection-management/`) — District
   Admin/Super Admin schedules an inspection against a `submitted`/`under_review`
   product (assigns an Inspector, who must belong to the same district — enforced
@@ -44,7 +46,10 @@ docs this scaffold was built against).
   flow from module 03 just works here too). A decision requires findings to
   already be recorded, and each inspection can only be decided once.
   `collection-center-inventory` here is a deliberately thin slice (just enough
-  to log the receipt) — the rest was filled in by module 05.
+  to log the receipt) — the rest was filled in by module 05. Approval now
+  moves the product straight to `listed` (not just `approved`) — by the time
+  the inventory receipt is logged in the same call, the only real gate on
+  "Listed" (goods received, `in_storage`) is already satisfied.
 - **Collection Center Management module** (`src/api/collection-center-management/`)
   — District Admin (own district's collection centers only)/Super Admin can
   list/get inventory (optionally filtered by `collectionCenterId`/`status`),
@@ -69,6 +74,28 @@ docs this scaffold was built against).
   in `delivery-partner-profiles`, module 08, not built). `DISTRICT_ADMIN`
   account creation is still missing — `districts/:id/assign-admin` still
   expects a user that already has that role.
+- **Bidding Engine module** (`src/api/bidding-engine/`, new `src/gateways/`)
+  — a `@nestjs/schedule` cron (every 10s) opens a `bidding-sessions` entry the
+  moment a `listed` product's `biddingStartTime` arrives (→ product status
+  `bidding_live`), and closes it once `currentEndTime` passes, picking a
+  winner (→ product `sold`) or marking it `unsold` if nobody bid. Bid
+  placement (`POST /bidding-sessions/:productId/bids`, Buyer with verified
+  phone only) is atomic against the live document via a MongoDB
+  aggregation-pipeline `findOneAndUpdate` — re-checked at write time, not just
+  read time, so no lost updates under concurrent bids (verified with a real
+  concurrent-request test) — and anti-sniping extension (+30s inside the last
+  30s, repeatable) is folded into that same atomic update. Real-time updates
+  (`bid-placed`/`session-started`/`session-ended`) broadcast over a new
+  Socket.IO gateway (`@nestjs/websockets` + `@nestjs/platform-socket.io`,
+  newly installed), one room per product. `GET /bidding-sessions/:productId`
+  and its `/bids` history are open to Buyers/Admins/Inspectors and to the
+  owning Farmer (read-only, per requirement.md); `GET /bids/mine` is a
+  Buyer's own bid history. Deferred, per requirement.md's own dependency
+  list: the minimum-bid-increment is a flat default (not yet configurable per
+  category), the delivery-address-verification half of the bid-eligibility
+  check (no `BuyerProfile` exists to hold one), and the post-win payment
+  window + non-payment cascade-to-next-bidder (Payment & Escrow, module 07,
+  not built) — a win currently goes straight to `sold` with no payment step.
 - **Roles** (`src/utils/enum.ts`) — `SUPER_ADMIN`, `DISTRICT_ADMIN`, `INSPECTOR`,
   `FARMER`, `BUYER`, `DELIVERY_PARTNER` all have at least one working module now.
 - **One working example endpoint per existing role** — `GET /<role>/profile`,
@@ -82,14 +109,13 @@ docs this scaffold was built against).
 
 ## What's intentionally NOT built yet
 
-Everything in `modules/06` through `modules/12` (bidding, payments/escrow,
+Everything in `modules/07` through `modules/12` (payments/escrow,
 orders/delivery, notifications, disputes, admin reporting, localization) —
 those are real business modules to build next, using the same layering
 pattern demonstrated so far. `database/*.md` describes the target schema for
 each of those collections. `product-interests` (buyer "mark interested" +
-reminder tracking) is deferred to whichever of Bidding Engine (06) /
-Notification (09) actually needs it — its only stated purpose is feeding a
-reminder those modules haven't built yet.
+reminder tracking) is still deferred — its only stated purpose is feeding the
+5-minutes-before-bidding reminder, which needs the Notification module (09).
 
 Also not built within District Management itself: the business rule blocking
 district deactivation while it has products in an active lifecycle state

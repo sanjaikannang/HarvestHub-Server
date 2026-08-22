@@ -17,6 +17,10 @@ const EDITABLE_STATUSES = [ProductStatus.SUBMITTED, ProductStatus.UNDER_REVIEW, 
 // this the product has moved into Inspection (04) territory
 const REVIEWABLE_SOURCE_STATUSES = [ProductStatus.SUBMITTED, ProductStatus.UNDER_REVIEW];
 
+// Statuses a Buyer can browse — listed-and-waiting or a session in progress
+// (see Bidding Engine, module 06)
+const MARKETPLACE_STATUSES = [ProductStatus.LISTED, ProductStatus.BIDDING_LIVE];
+
 const BIDDING_DURATION_MS = 30 * 60 * 1000;
 
 export interface ProductSubmissionData {
@@ -163,6 +167,14 @@ export class ProductService {
     // List My Products API Endpoint (Farmer)
     async listMyProductsAPI(farmerId: string, status?: ProductStatus) {
         const products = await this.productRepositoryService.findByFarmerId(farmerId, status);
+        return products.map((product) => this.toSummary(product));
+    }
+
+
+    // Marketplace Browse API Endpoint (Buyer, or any authenticated role) —
+    // Listed products waiting on their session plus sessions already live
+    async listMarketplaceAPI() {
+        const products = await this.productRepositoryService.findByStatuses(MARKETPLACE_STATUSES);
         return products.map((product) => this.toSummary(product));
     }
 

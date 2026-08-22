@@ -18,10 +18,12 @@ import { DeactivateCategoryController } from './category/deactivate-category/dea
 import { ListCategoriesController } from './category/list-categories/list-categories.controller';
 import { GetCategoryController } from './category/get-category/get-category.controller';
 
-// Product controllers — ListMyProducts (/products/mine) MUST be registered
-// before GetProduct (/products/:id), or Express will match "mine" as an :id.
+// Product controllers — ListMyProducts (/products/mine) and ListMarketplace
+// (/products/marketplace) MUST be registered before GetProduct (/products/:id),
+// or Express will match "mine"/"marketplace" as an :id.
 import { CreateProductController } from './product/create-product/create-product.controller';
 import { ListMyProductsController } from './product/list-my-products/list-my-products.controller';
+import { ListMarketplaceController } from './product/list-marketplace/list-marketplace.controller';
 import { GetProductController } from './product/get-product/get-product.controller';
 import { ListProductsForReviewController } from './product/list-products-for-review/list-products-for-review.controller';
 import { UpdateProductController } from './product/update-product/update-product.controller';
@@ -55,6 +57,7 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         GetCategoryController,
         CreateProductController,
         ListMyProductsController,
+        ListMarketplaceController,
         GetProductController,
         ListProductsForReviewController,
         UpdateProductController,

@@ -13,7 +13,7 @@ export class GetProductController {
 
     @Get(':id')
     @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles(UserRole.SUPER_ADMIN, UserRole.DISTRICT_ADMIN, UserRole.FARMER, UserRole.INSPECTOR)
+    @Roles(UserRole.SUPER_ADMIN, UserRole.DISTRICT_ADMIN, UserRole.FARMER, UserRole.INSPECTOR, UserRole.BUYER)
     async getProduct(@Param('id') id: string, @Req() req: Request): Promise<GetProductResponse> {
         const requestingUser = (req as any).user;
         const data = await this.productService.getProductByIdAPI(id, requestingUser);

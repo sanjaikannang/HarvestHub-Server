@@ -100,11 +100,24 @@ export enum AdminDecision {
   CHANGES_REQUESTED = 'changes_requested',
 }
 
-// database/collection-center-inventory.md — only `in_storage` is written today
-// (Inspection module, 04, on approval); reserved_for_sale/dispatched belong to
-// modules 06/08, not built yet.
+// database/collection-center-inventory.md — in_storage is written by Inspection
+// (04) on approval; reserved_for_sale/dispatched are manual admin actions today
+// (Collection Center Management, 05) until Bidding/Payment (06/07) and
+// Order/Delivery (08) can trigger them automatically.
 export enum InventoryStatus {
   IN_STORAGE = 'in_storage',
   RESERVED_FOR_SALE = 'reserved_for_sale',
   DISPATCHED = 'dispatched',
+}
+
+// database/bidding-sessions.md
+export enum BiddingSessionStatus {
+  SCHEDULED = 'scheduled',
+  LIVE = 'live',
+  ENDED = 'ended',
+}
+
+export enum BiddingOutcome {
+  SOLD = 'sold',
+  UNSOLD = 'unsold',
 }

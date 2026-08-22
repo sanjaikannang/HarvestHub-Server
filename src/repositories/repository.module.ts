@@ -11,6 +11,8 @@ import { ProductRepositoryService } from "./product-repository/product.repositor
 import { AuditLogRepositoryService } from "./audit-log-repository/audit-log.repository";
 import { InspectionRepositoryService } from "./inspection-repository/inspection.repository";
 import { CollectionCenterInventoryRepositoryService } from "./collection-center-inventory-repository/collection-center-inventory.repository";
+import { BiddingSessionRepositoryService } from "./bidding-session-repository/bidding-session.repository";
+import { BidRepositoryService } from "./bid-repository/bid.repository";
 
 // Schemas
 import { User, UserSchema } from "src/schemas/User/user.schema";
@@ -22,11 +24,13 @@ import { Product, ProductSchema } from "src/schemas/Product/product.schema";
 import { AuditLog, AuditLogSchema } from "src/schemas/AuditLog/audit-log.schema";
 import { Inspection, InspectionSchema } from "src/schemas/Inspection/inspection.schema";
 import { CollectionCenterInventory, CollectionCenterInventorySchema } from "src/schemas/CollectionCenterInventory/collection-center-inventory.schema";
+import { BiddingSession, BiddingSessionSchema } from "src/schemas/BiddingSession/bidding-session.schema";
+import { Bid, BidSchema } from "src/schemas/Bid/bid.schema";
 
 // Single aggregator module for every repository in the app — feature modules
 // import this once rather than wiring MongooseModule.forFeature() themselves.
-// Add new schemas/repositories here as HarvestHub's other modules (bidding,
-// payments, orders, etc.) get built out.
+// Add new schemas/repositories here as HarvestHub's other modules (payments,
+// orders, etc.) get built out.
 @Module({
     imports: [
         MongooseModule.forFeature([
@@ -39,6 +43,8 @@ import { CollectionCenterInventory, CollectionCenterInventorySchema } from "src/
             { name: AuditLog.name, schema: AuditLogSchema },
             { name: Inspection.name, schema: InspectionSchema },
             { name: CollectionCenterInventory.name, schema: CollectionCenterInventorySchema },
+            { name: BiddingSession.name, schema: BiddingSessionSchema },
+            { name: Bid.name, schema: BidSchema },
         ]),
     ],
     controllers: [],
@@ -52,6 +58,8 @@ import { CollectionCenterInventory, CollectionCenterInventorySchema } from "src/
         AuditLogRepositoryService,
         InspectionRepositoryService,
         CollectionCenterInventoryRepositoryService,
+        BiddingSessionRepositoryService,
+        BidRepositoryService,
     ],
     exports: [
         UserRepositoryService,
@@ -63,6 +71,8 @@ import { CollectionCenterInventory, CollectionCenterInventorySchema } from "src/
         AuditLogRepositoryService,
         InspectionRepositoryService,
         CollectionCenterInventoryRepositoryService,
+        BiddingSessionRepositoryService,
+        BidRepositoryService,
     ],
 })
 export class RepositoryModule { }
