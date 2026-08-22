@@ -19,6 +19,7 @@ import { CollectionCenterInventoryService } from "./collection-center-inventory-
 import { NotificationService } from "./notification-service/notification.service";
 import { NotificationTemplateService } from "./notification-template-service/notification-template.service";
 import { SmsService } from "./sms-service/sms.service";
+import { DashboardService } from "./dashboard-service/dashboard.service";
 import { NotificationGateway } from "src/gateways/notification.gateway";
 import { ConfigService } from "src/config/config.service";
 
@@ -59,6 +60,7 @@ import { RepositoryModule } from "src/repositories/repository.module";
         NotificationTemplateService,
         SmsService,
         NotificationGateway,
+        DashboardService,
     ],
     exports: [
         AuthService,
@@ -79,6 +81,7 @@ import { RepositoryModule } from "src/repositories/repository.module";
         NotificationTemplateService,
         SmsService,
         NotificationGateway,
+        DashboardService,
     ],
 })
 export class ServiceModule { }

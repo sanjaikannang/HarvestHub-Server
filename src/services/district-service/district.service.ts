@@ -1,19 +1,27 @@
 import { Types } from 'mongoose';
-import { UserRole } from 'src/utils/enum';
+import { DeliveryStatus, ProductStatus, UserRole } from 'src/utils/enum';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { DistrictRepositoryService } from 'src/repositories/district-repository/district.repository';
 import { UserRepositoryService } from 'src/repositories/user-repository/user.repository';
+import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
+import { OrderRepositoryService } from 'src/repositories/order-repository/order.repository';
 
 export interface RequestingUser {
     sub: string;
     role: UserRole;
 }
 
+// Terminal/settled statuses — everything else is still moving through
+// submission, review, inspection, or bidding (see getDistrictDirectoryAPI)
+const SETTLED_PRODUCT_STATUSES = [ProductStatus.REJECTED, ProductStatus.SOLD, ProductStatus.UNSOLD];
+
 @Injectable()
 export class DistrictService {
     constructor(
         private readonly districtRepositoryService: DistrictRepositoryService,
         private readonly userRepositoryService: UserRepositoryService,
+        private readonly productRepositoryService: ProductRepositoryService,
+        private readonly orderRepositoryService: OrderRepositoryService,
     ) { }
 
 
@@ -124,9 +132,11 @@ export class DistrictService {
             districts.map(async (district) => {
                 const districtId = (district._id as Types.ObjectId).toString();
 
-                const [activeFarmers, activeBuyers] = await Promise.all([
+                const [activeFarmers, activeBuyers, products, orders] = await Promise.all([
                     this.userRepositoryService.countActiveByDistrictAndRole(districtId, UserRole.FARMER),
                     this.userRepositoryService.countActiveByDistrictAndRole(districtId, UserRole.BUYER),
+                    this.productRepositoryService.findAll({ districtId }),
+                    this.orderRepositoryService.findAll({ districtId }),
                 ]);
 
                 return {
@@ -134,10 +144,8 @@ export class DistrictService {
                     stats: {
                         activeFarmers,
                         activeBuyers,
-                        // TODO: wire up once Catalog Management (module 03) and
-                        // Order/Delivery Management (module 08) exist.
-                        productsInPipeline: 0,
-                        ordersInProgress: 0,
+                        productsInPipeline: products.filter((product) => !SETTLED_PRODUCT_STATUSES.includes(product.status)).length,
+                        ordersInProgress: orders.filter((order) => order.deliveryStatus !== DeliveryStatus.DELIVERED).length,
                     },
                 };
             }),

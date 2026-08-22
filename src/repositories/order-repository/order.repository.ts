@@ -72,6 +72,32 @@ export class OrderRepositoryService {
     }
 
 
+    // Platform-wide order count — backs the Super Admin dashboard's totals
+    // (see Admin Dashboard & Reporting, module 11)
+    async countAll(): Promise<number> {
+        try {
+            return await this.orderModel.countDocuments({}).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to count orders', error);
+        }
+    }
+
+
+    // Sum of every order's totalAmount — an Order only ever exists after a
+    // successful payment, so this is exactly the platform's completed-sales
+    // revenue (see Admin Dashboard & Reporting, module 11)
+    async getTotalRevenue(): Promise<number> {
+        try {
+            const result = await this.orderModel.aggregate([
+                { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+            ]).exec();
+            return result[0]?.total ?? 0;
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to compute total revenue', error);
+        }
+    }
+
+
     async findByDeliveryPartnerId(deliveryPartnerId: string): Promise<OrderDocument[]> {
         try {
             return await this.orderModel.find({ deliveryPartnerId: new Types.ObjectId(deliveryPartnerId) }).sort({ createdAt: -1 }).exec();

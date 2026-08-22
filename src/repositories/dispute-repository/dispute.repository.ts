@@ -21,6 +21,17 @@ export class DisputeRepositoryService {
     }
 
 
+    // Platform-wide count by status — backs the Super Admin dashboard's
+    // "pending escalations" figure (see Admin Dashboard & Reporting, module 11)
+    async countByStatus(status: DisputeStatus): Promise<number> {
+        try {
+            return await this.disputeModel.countDocuments({ status }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to count disputes by status', error);
+        }
+    }
+
+
     async findById(id: string): Promise<DisputeDocument | null> {
         try {
             return await this.disputeModel.findById(id).exec();

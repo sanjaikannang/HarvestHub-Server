@@ -11,6 +11,23 @@ export class PayoutRepositoryService {
     ) { }
 
 
+    // Platform-wide commission total — the Super Admin dashboard's revenue
+    // summary (see Admin Dashboard & Reporting, module 11). Sums the
+    // commission as originally computed at payout-creation time regardless
+    // of later dispute adjustments — this is gross commission earned, not
+    // net of refunds (requirement.md doesn't specify refund-adjusted commission).
+    async getTotalCommission(): Promise<number> {
+        try {
+            const result = await this.payoutModel.aggregate([
+                { $group: { _id: null, total: { $sum: '$commissionAmount' } } },
+            ]).exec();
+            return result[0]?.total ?? 0;
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to compute total commission', error);
+        }
+    }
+
+
     // Created alongside the Order, status `pending` (see PaymentService.verifyPaymentAPI)
     async create(data: Partial<Payout>): Promise<PayoutDocument> {
         try {

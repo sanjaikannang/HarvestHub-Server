@@ -64,6 +64,17 @@ export class ProductRepositoryService {
     }
 
 
+    // Platform-wide product count — backs the Super Admin dashboard's totals
+    // (see Admin Dashboard & Reporting, module 11)
+    async countAll(): Promise<number> {
+        try {
+            return await this.productModel.countDocuments({}).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to count products', error);
+        }
+    }
+
+
     // Update editable listing fields (name/description/images/etc.) — status
     // transitions go through updateStatus instead
     async updateDetails(id: string, updates: Partial<Product>): Promise<ProductDocument | null> {

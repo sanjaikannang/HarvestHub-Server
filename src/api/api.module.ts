@@ -13,6 +13,7 @@ import { BiddingEngineModule } from './bidding-engine/bidding-engine.module';
 import { PaymentEscrowModule } from './payment-escrow/payment-escrow.module';
 import { NotificationManagementModule } from './notification-management/notification-management.module';
 import { DisputeResolutionModule } from './dispute-resolution/dispute-resolution.module';
+import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DisputeResolutionModule } from './dispute-resolution/dispute-resolution
     PaymentEscrowModule,
     NotificationManagementModule,
     DisputeResolutionModule,
+    AdminDashboardModule,
   ],
   controllers: [],
   providers: [],

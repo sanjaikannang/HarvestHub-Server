@@ -13,6 +13,8 @@ export enum AuditAction {
     PRODUCT_CHANGES_REQUESTED = 'product_changes_requested',
     PRODUCT_REJECTED = 'product_rejected',
     PRODUCT_RESUBMITTED = 'product_resubmitted',
+    PRODUCT_APPROVED = 'product_approved',
+    DISPUTE_RESOLVED = 'dispute_resolved',
 }
 
 // Immutable record of significant admin/system decisions, for compliance and
@@ -42,9 +44,18 @@ export class AuditLog {
     @Prop({ type: Object })
     metadata?: Record<string, unknown>;
 
+    // Snapshot of the relevant district at write time — not in
+    // database/audit-logs.md's field list, but needed so the Admin
+    // Dashboard module (11) can enforce "District Admin sees only their own
+    // district" without an expensive heterogeneous join back through
+    // targetEntityType at read time.
+    @Prop({ type: Types.ObjectId, ref: 'District' })
+    districtId?: Types.ObjectId;
+
 }
 
 export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);
 
 AuditLogSchema.index({ targetEntityType: 1, targetEntityId: 1 });
 AuditLogSchema.index({ actorId: 1, createdAt: -1 });
+AuditLogSchema.index({ districtId: 1, createdAt: -1 });

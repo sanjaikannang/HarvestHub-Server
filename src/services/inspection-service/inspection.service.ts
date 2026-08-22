@@ -8,6 +8,8 @@ import { ProductRepositoryService } from 'src/repositories/product-repository/pr
 import { InspectionRepositoryService } from 'src/repositories/inspection-repository/inspection.repository';
 import { CollectionCenterRepositoryService } from 'src/repositories/collection-center-repository/collection-center.repository';
 import { CollectionCenterInventoryRepositoryService } from 'src/repositories/collection-center-inventory-repository/collection-center-inventory.repository';
+import { AuditLogRepositoryService } from 'src/repositories/audit-log-repository/audit-log.repository';
+import { AuditAction } from 'src/schemas/AuditLog/audit-log.schema';
 import { Inspection, InspectionDocument } from 'src/schemas/Inspection/inspection.schema';
 
 // Statuses a product must be in before an inspection can be scheduled against it
@@ -44,6 +46,7 @@ export class InspectionService {
         private readonly collectionCenterRepositoryService: CollectionCenterRepositoryService,
         private readonly collectionCenterInventoryRepositoryService: CollectionCenterInventoryRepositoryService,
         private readonly notificationService: NotificationService,
+        private readonly auditLogRepositoryService: AuditLogRepositoryService,
     ) { }
 
 
@@ -226,6 +229,25 @@ export class InspectionService {
                 [NotificationChannel.IN_APP, NotificationChannel.SMS],
             );
         }
+
+        const auditAction = decision === AdminDecision.APPROVED
+            ? AuditAction.PRODUCT_APPROVED
+            : decision === AdminDecision.REJECTED
+                ? AuditAction.PRODUCT_REJECTED
+                : AuditAction.PRODUCT_CHANGES_REQUESTED;
+
+        await this.auditLogRepositoryService.create({
+            actorId: new Types.ObjectId(requestingUser.sub),
+            actorRole: requestingUser.role,
+            action: auditAction,
+            targetEntityType: 'product',
+            targetEntityId: inspection.productId,
+            reason: data.reason,
+            districtId: inspection.districtId,
+            metadata: decision === AdminDecision.APPROVED
+                ? { verifiedQuantity: inspection.verifiedQuantity, qualityGrade: inspection.qualityGrade }
+                : undefined,
+        });
 
         return this.toSummary(updated!);
     }

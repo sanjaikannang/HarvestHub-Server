@@ -55,6 +55,19 @@ export class BiddingSessionRepositoryService {
     }
 
 
+    // All sessions in a given status, platform-wide — the District Admin
+    // dashboard's "active bidding sessions" figure cross-references this
+    // against the district's own product ids (see Admin Dashboard &
+    // Reporting, module 11)
+    async findByStatus(status: BiddingSessionStatus): Promise<BiddingSessionDocument[]> {
+        try {
+            return await this.sessionModel.find({ status }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find bidding sessions by status', error);
+        }
+    }
+
+
     // Atomically place a bid: only succeeds if the session is still live and
     // this amount still beats whatever is currently the highest (re-checked
     // against the live document, not the caller's possibly-stale read) — the

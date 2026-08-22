@@ -275,4 +275,15 @@ export class UserRepositoryService {
         }
     }
 
+
+    // Platform-wide active user count by role — backs the Super Admin
+    // dashboard's totals (see Admin Dashboard & Reporting, module 11)
+    async countByRole(role: UserRole): Promise<number> {
+        try {
+            return await this.userModel.countDocuments({ role, isActive: true }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to count users by role', error);
+        }
+    }
+
 }

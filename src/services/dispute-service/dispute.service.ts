@@ -8,6 +8,8 @@ import { OrderRepositoryService } from 'src/repositories/order-repository/order.
 import { PayoutRepositoryService } from 'src/repositories/payout-repository/payout.repository';
 import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
 import { DisputeRepositoryService } from 'src/repositories/dispute-repository/dispute.repository';
+import { AuditLogRepositoryService } from 'src/repositories/audit-log-repository/audit-log.repository';
+import { AuditAction } from 'src/schemas/AuditLog/audit-log.schema';
 import { DisputeDocument } from 'src/schemas/Dispute/dispute.schema';
 import { OrderDocument } from 'src/schemas/Order/order.schema';
 
@@ -36,6 +38,7 @@ export class DisputeService {
         private readonly userRepositoryService: UserRepositoryService,
         private readonly districtService: DistrictService,
         private readonly notificationService: NotificationService,
+        private readonly auditLogRepositoryService: AuditLogRepositoryService,
     ) { }
 
 
@@ -134,6 +137,7 @@ export class DisputeService {
                 );
             }
             await this.notifyBuyerStatusUpdate(order, disputeId, DisputeStatus.ESCALATED);
+            await this.logResolution(order, disputeId, requestingUser, data.resolutionNotes, { outcome: 'escalate' });
 
             return this.toSummary(updated!);
         }
@@ -172,6 +176,7 @@ export class DisputeService {
             });
 
             await this.notifyBuyerStatusUpdate(order, disputeId, DisputeStatus.RESOLVED_REFUND);
+            await this.logResolution(order, disputeId, requestingUser, data.resolutionNotes, { outcome: 'refund', refundAmount: data.refundAmount });
             return this.toSummary(updated!);
         }
 
@@ -183,6 +188,7 @@ export class DisputeService {
         });
 
         await this.notifyBuyerStatusUpdate(order, disputeId, DisputeStatus.RESOLVED_REJECTED);
+        await this.logResolution(order, disputeId, requestingUser, data.resolutionNotes, { outcome: 'reject' });
         return this.toSummary(updated!);
     }
 
@@ -232,6 +238,20 @@ export class DisputeService {
             { productName: product.name, status: status.replace(/_/g, ' ') },
             { type: 'dispute', id: disputeId },
         );
+    }
+
+
+    private async logResolution(order: OrderDocument, disputeId: string, requestingUser: RequestingUser, reason: string, metadata: Record<string, unknown>): Promise<void> {
+        await this.auditLogRepositoryService.create({
+            actorId: new Types.ObjectId(requestingUser.sub),
+            actorRole: requestingUser.role,
+            action: AuditAction.DISPUTE_RESOLVED,
+            targetEntityType: 'dispute',
+            targetEntityId: new Types.ObjectId(disputeId),
+            reason,
+            districtId: order.districtId,
+            metadata,
+        });
     }
 
 
