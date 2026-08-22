@@ -23,6 +23,7 @@ import { CreateInspectorController } from './create-inspector/create-inspector.c
 import { ListInspectorsController } from './list-inspectors/list-inspectors.controller';
 import { CreateDeliveryPartnerController } from './create-delivery-partner/create-delivery-partner.controller';
 import { ListDeliveryPartnersController } from './list-delivery-partners/list-delivery-partners.controller';
+import { UpdateLanguageController } from './update-language/update-language.controller';
 
 // Guards
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
@@ -59,6 +60,7 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         ListInspectorsController,
         CreateDeliveryPartnerController,
         ListDeliveryPartnersController,
+        UpdateLanguageController,
     ],
     providers: [
         ConfigService,

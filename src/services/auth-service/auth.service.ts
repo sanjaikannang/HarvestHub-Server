@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { Types } from "mongoose";
-import { UserRole } from "src/utils/enum";
+import { PreferredLanguage, UserRole } from "src/utils/enum";
 import { AuthJwtService } from './jwt.service';
 import { PasswordService } from './password.service';
 import { ConfigService } from 'src/config/config.service';
@@ -138,6 +138,7 @@ export class AuthService {
                 email: user.email,
                 role: user.role,
                 isFirstLogin: user.isFirstLogin,
+                preferredLanguage: user.preferredLanguage,
             },
             tokens: {
                 accessToken,
@@ -479,6 +480,20 @@ export class AuthService {
             phone: deliveryPartner.phone,
             email: deliveryPartner.email,
         }));
+    }
+
+
+    // Update Language API Endpoint (any authenticated role) — persists the
+    // in-app language selector to the user's profile so it's applied
+    // automatically on login and stays consistent across devices, and so
+    // NotificationService renders future notifications in it (see
+    // modules/12-localization/requirement.md)
+    async updateLanguageAPI(userId: string, preferredLanguage: PreferredLanguage) {
+        const updated = await this.userRepositoryService.updateUser(userId, { preferredLanguage });
+        if (!updated) {
+            throw new NotFoundException('Account not found');
+        }
+        return { preferredLanguage: updated.preferredLanguage };
     }
 
 }
