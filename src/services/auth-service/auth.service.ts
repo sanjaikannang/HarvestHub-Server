@@ -1,14 +1,15 @@
 import * as crypto from 'crypto';
 import { Types } from "mongoose";
-import { UserRole } from "src/utils/enum";
+import { PreferredLanguage, UserRole } from "src/utils/enum";
 import { AuthJwtService } from './jwt.service';
 import { PasswordService } from './password.service';
 import { ConfigService } from 'src/config/config.service';
 import { LoginRequest } from 'src/api/auth/login/login.request';
 import { RegisterRequest } from 'src/api/auth/register/register.request';
 import { AuthAction } from 'src/schemas/AuthActivityLog/auth-activity-log.schema';
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { UserRepositoryService } from 'src/repositories/user-repository/user.repository';
+import { DeliveryPartnerProfileRepositoryService } from 'src/repositories/delivery-partner-profile-repository/delivery-partner-profile.repository';
 import { ResetPasswordRequest } from 'src/api/auth/reset-password/reset-password.request';
 import { ChangePasswordRequest } from 'src/api/auth/change-password/change-password.request';
 import { AuthActivityLogRepositoryService } from 'src/repositories/auth-activity-log-repository/auth-activity-log.repository';
@@ -30,6 +31,7 @@ const SELF_REGISTERABLE_ROLES = [UserRole.FARMER, UserRole.BUYER];
 export class AuthService {
     constructor(
         private readonly userRepositoryService: UserRepositoryService,
+        private readonly deliveryPartnerProfileRepositoryService: DeliveryPartnerProfileRepositoryService,
         private readonly authActivityLogRepositoryService: AuthActivityLogRepositoryService,
         private readonly passwordService: PasswordService,
         private readonly jwtService: AuthJwtService,
@@ -136,6 +138,7 @@ export class AuthService {
                 email: user.email,
                 role: user.role,
                 isFirstLogin: user.isFirstLogin,
+                preferredLanguage: user.preferredLanguage,
             },
             tokens: {
                 accessToken,
@@ -324,6 +327,173 @@ export class AuthService {
         return {
             message: 'Password has been reset successfully. Please log in with your new password.',
         };
+    }
+
+
+    // Create Inspector API Endpoint (District Admin) — onboarded, not
+    // self-registered; always assigned to the creating admin's own district
+    // (see modules/01-auth-user-management.md and modules/04-inspection-management.md)
+    async createInspectorAPI(districtAdminUserId: string, data: { name: string; phone: string; email?: string; password: string }) {
+        const districtAdmin = await this.userRepositoryService.findById(districtAdminUserId);
+        if (!districtAdmin?.districtId) {
+            throw new BadRequestException('You must be assigned to a district before you can add an Inspector');
+        }
+
+        const existingByPhone = await this.userRepositoryService.findUserByPhone(data.phone);
+        if (existingByPhone) {
+            throw new ConflictException('An account with this phone number already exists');
+        }
+
+        if (data.email) {
+            const existingByEmail = await this.userRepositoryService.findUserByEmail(data.email);
+            if (existingByEmail) {
+                throw new ConflictException('An account with this email already exists');
+            }
+        }
+
+        const passwordValidation = this.passwordService.validatePasswordStrength(data.password);
+        if (!passwordValidation.isValid) {
+            throw new BadRequestException(passwordValidation.message);
+        }
+
+        const hashedPassword = await this.passwordService.hashPassword(data.password);
+
+        const inspector = await this.userRepositoryService.create({
+            name: data.name,
+            phone: data.phone,
+            email: data.email,
+            password: hashedPassword,
+            role: UserRole.INSPECTOR,
+            districtId: districtAdmin.districtId,
+            isActive: true,
+            isPhoneVerified: false,
+            isFirstLogin: true,
+            createdBy: districtAdmin._id as Types.ObjectId,
+        });
+
+        return {
+            id: (inspector._id as Types.ObjectId).toString(),
+            name: inspector.name,
+            phone: inspector.phone,
+            email: inspector.email,
+            role: inspector.role,
+            districtId: inspector.districtId?.toString(),
+        };
+    }
+
+
+    // List Inspectors API Endpoint — District Admin: own district only,
+    // Super Admin: all or filtered by districtId
+    async listInspectorsAPI(requestingUser: { sub: string; role: UserRole }, districtId?: string) {
+        let scopedDistrictId = districtId;
+
+        if (requestingUser.role === UserRole.DISTRICT_ADMIN) {
+            const admin = await this.userRepositoryService.findById(requestingUser.sub);
+            if (!admin?.districtId) {
+                throw new BadRequestException('You must be assigned to a district first');
+            }
+            scopedDistrictId = admin.districtId.toString();
+        }
+
+        const inspectors = await this.userRepositoryService.findByRoleAndDistrict(UserRole.INSPECTOR, scopedDistrictId);
+
+        return inspectors.map((inspector) => ({
+            id: (inspector._id as Types.ObjectId).toString(),
+            name: inspector.name,
+            phone: inspector.phone,
+            email: inspector.email,
+            districtId: inspector.districtId?.toString(),
+        }));
+    }
+
+
+    // Create Delivery Partner API Endpoint (Super Admin or District Admin) —
+    // onboarded, not self-registered (see modules/01-auth-user-management.md).
+    // Also creates the DeliveryPartnerProfile (database/delivery-partner-profiles.md)
+    // that Order & Delivery Management's auto-assignment logic matches against.
+    async createDeliveryPartnerAPI(creatorUserId: string, data: {
+        name: string; phone: string; email?: string; password: string;
+        districtsServiced: string[]; vehicleType: string; vehicleNumber: string; capacityKg: number;
+    }) {
+        const creator = await this.userRepositoryService.findById(creatorUserId);
+        if (!creator) {
+            throw new NotFoundException('Account not found');
+        }
+
+        const existingByPhone = await this.userRepositoryService.findUserByPhone(data.phone);
+        if (existingByPhone) {
+            throw new ConflictException('An account with this phone number already exists');
+        }
+
+        if (data.email) {
+            const existingByEmail = await this.userRepositoryService.findUserByEmail(data.email);
+            if (existingByEmail) {
+                throw new ConflictException('An account with this email already exists');
+            }
+        }
+
+        const passwordValidation = this.passwordService.validatePasswordStrength(data.password);
+        if (!passwordValidation.isValid) {
+            throw new BadRequestException(passwordValidation.message);
+        }
+
+        const hashedPassword = await this.passwordService.hashPassword(data.password);
+
+        const deliveryPartner = await this.userRepositoryService.create({
+            name: data.name,
+            phone: data.phone,
+            email: data.email,
+            password: hashedPassword,
+            role: UserRole.DELIVERY_PARTNER,
+            isActive: true,
+            isPhoneVerified: false,
+            isFirstLogin: true,
+            createdBy: creator._id as Types.ObjectId,
+        });
+
+        await this.deliveryPartnerProfileRepositoryService.create({
+            userId: deliveryPartner._id as Types.ObjectId,
+            districtsServiced: data.districtsServiced.map((id) => new Types.ObjectId(id)),
+            vehicleType: data.vehicleType,
+            vehicleNumber: data.vehicleNumber,
+            capacityKg: data.capacityKg,
+        });
+
+        return {
+            id: (deliveryPartner._id as Types.ObjectId).toString(),
+            name: deliveryPartner.name,
+            phone: deliveryPartner.phone,
+            email: deliveryPartner.email,
+            role: deliveryPartner.role,
+        };
+    }
+
+
+    // List Delivery Partners API Endpoint (Super Admin or District Admin) —
+    // not district-scoped, per createDeliveryPartnerAPI above
+    async listDeliveryPartnersAPI() {
+        const deliveryPartners = await this.userRepositoryService.findByRoleAndDistrict(UserRole.DELIVERY_PARTNER);
+
+        return deliveryPartners.map((deliveryPartner) => ({
+            id: (deliveryPartner._id as Types.ObjectId).toString(),
+            name: deliveryPartner.name,
+            phone: deliveryPartner.phone,
+            email: deliveryPartner.email,
+        }));
+    }
+
+
+    // Update Language API Endpoint (any authenticated role) — persists the
+    // in-app language selector to the user's profile so it's applied
+    // automatically on login and stays consistent across devices, and so
+    // NotificationService renders future notifications in it (see
+    // modules/12-localization/requirement.md)
+    async updateLanguageAPI(userId: string, preferredLanguage: PreferredLanguage) {
+        const updated = await this.userRepositoryService.updateUser(userId, { preferredLanguage });
+        if (!updated) {
+            throw new NotFoundException('Account not found');
+        }
+        return { preferredLanguage: updated.preferredLanguage };
     }
 
 }

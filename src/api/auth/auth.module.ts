@@ -19,6 +19,11 @@ import { RefreshTokenController } from './refresh-token/refresh-token.controller
 import { ChangePasswordController } from './change-password/change-password.controller';
 import { ForgotPasswordController } from './forgot-password/forgot-password.controller';
 import { ResetPasswordController } from './reset-password/reset-password.controller';
+import { CreateInspectorController } from './create-inspector/create-inspector.controller';
+import { ListInspectorsController } from './list-inspectors/list-inspectors.controller';
+import { CreateDeliveryPartnerController } from './create-delivery-partner/create-delivery-partner.controller';
+import { ListDeliveryPartnersController } from './list-delivery-partners/list-delivery-partners.controller';
+import { UpdateLanguageController } from './update-language/update-language.controller';
 
 // Guards
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
@@ -51,6 +56,11 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         ChangePasswordController,
         ForgotPasswordController,
         ResetPasswordController,
+        CreateInspectorController,
+        ListInspectorsController,
+        CreateDeliveryPartnerController,
+        ListDeliveryPartnersController,
+        UpdateLanguageController,
     ],
     providers: [
         ConfigService,

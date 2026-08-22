@@ -12,6 +12,7 @@ export class LoginResponse {
             email?: string;
             role: UserRole;
             isFirstLogin: boolean;
+            preferredLanguage: PreferredLanguage;
         };
         tokens: {
             accessToken: string;

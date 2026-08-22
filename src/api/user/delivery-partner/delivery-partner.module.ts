@@ -11,6 +11,7 @@ import { DeliveryPartnerService } from 'src/services/user-service/delivery-partn
 
 // Controllers
 import { GetMyProfileController } from './profile/get-my-profile/get-my-profile.controller';
+import { UpdateAvailabilityController } from './availability/update-availability/update-availability.controller';
 
 // Modules
 import { ServiceModule } from 'src/services/service.module';
@@ -32,6 +33,7 @@ import { RepositoryModule } from 'src/repositories/repository.module';
     ],
     controllers: [
         GetMyProfileController,
+        UpdateAvailabilityController,
     ],
     providers: [
         ConfigService,

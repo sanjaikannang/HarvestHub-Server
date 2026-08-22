@@ -78,4 +78,16 @@ export class ConfigService {
     getCloudinaryApiSecret() {
         return this.getValue("CLOUDINARY_API_SECRET", true);
     }
+
+    getRazorpayKeyId() {
+        return this.getValue("RAZORPAY_KEY_ID", true);
+    }
+
+    getRazorpayKeySecret() {
+        return this.getValue("RAZORPAY_KEY_SECRET", true);
+    }
+
+    getRazorpayWebhookSecret() {
+        return this.getValue("RAZORPAY_WEBHOOK_SECRET", true);
+    }
 }
