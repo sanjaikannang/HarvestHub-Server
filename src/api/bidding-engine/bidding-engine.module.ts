@@ -19,6 +19,7 @@ import { ListMyBidsController } from './list-my-bids/list-my-bids.controller';
 // Modules
 import { ServiceModule } from 'src/services/service.module';
 import { RepositoryModule } from 'src/repositories/repository.module';
+import { PaymentEscrowModule } from 'src/api/payment-escrow/payment-escrow.module';
 
 @Module({
     imports: [
@@ -33,6 +34,7 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         }),
         ServiceModule,
         RepositoryModule,
+        PaymentEscrowModule,
     ],
     controllers: [
         GetBiddingSessionController,

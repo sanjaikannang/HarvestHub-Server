@@ -8,6 +8,7 @@ import { UserRepositoryService } from 'src/repositories/user-repository/user.rep
 import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
 import { BidRepositoryService } from 'src/repositories/bid-repository/bid.repository';
 import { BiddingSessionRepositoryService } from 'src/repositories/bidding-session-repository/bidding-session.repository';
+import { PaymentService } from 'src/services/payment-service/payment.service';
 import { BidDocument } from 'src/schemas/Bid/bid.schema';
 import { BiddingSessionDocument } from 'src/schemas/BiddingSession/bidding-session.schema';
 
@@ -25,6 +26,7 @@ export class BiddingService {
         private readonly productRepositoryService: ProductRepositoryService,
         private readonly userRepositoryService: UserRepositoryService,
         private readonly biddingGateway: BiddingGateway,
+        private readonly paymentService: PaymentService,
     ) { }
 
 
@@ -88,13 +90,22 @@ export class BiddingService {
                     : {},
             );
 
-            // TODO: on Sold, this is where the post-win payment window opens
-            // and, on non-payment, the cascade to the next-highest bidder
-            // (Payment & Escrow, module 07, not built) — for now the product
-            // moves straight to its final Sold/Unsold status.
             await this.productRepositoryService.updateDetails(productId, {
                 status: outcome === BiddingOutcome.SOLD ? ProductStatus.SOLD : ProductStatus.UNSOLD,
             });
+
+            if (outcome === BiddingOutcome.SOLD) {
+                const product = await this.productRepositoryService.findById(productId);
+                const quantity = product?.verifiedQuantity ?? product?.estimatedQuantity ?? 0;
+
+                await this.paymentService.openPaymentWindowAPI(
+                    sessionId,
+                    productId,
+                    session.currentHighestBid!.bidderId.toString(),
+                    session.currentHighestBid!.amount,
+                    quantity,
+                );
+            }
 
             this.biddingGateway.emitSessionEnded(productId, {
                 sessionId,

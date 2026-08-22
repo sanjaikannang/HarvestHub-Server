@@ -10,6 +10,7 @@ import { CatalogManagementModule } from './catalog-management/catalog-management
 import { InspectionManagementModule } from './inspection-management/inspection-management.module';
 import { CollectionCenterManagementModule } from './collection-center-management/collection-center-management.module';
 import { BiddingEngineModule } from './bidding-engine/bidding-engine.module';
+import { PaymentEscrowModule } from './payment-escrow/payment-escrow.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { BiddingEngineModule } from './bidding-engine/bidding-engine.module';
     InspectionManagementModule,
     CollectionCenterManagementModule,
     BiddingEngineModule,
+    PaymentEscrowModule,
   ],
   controllers: [],
   providers: [],

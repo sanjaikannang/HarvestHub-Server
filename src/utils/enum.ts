@@ -121,3 +121,32 @@ export enum BiddingOutcome {
   SOLD = 'sold',
   UNSOLD = 'unsold',
 }
+
+// database/payments.md
+export enum PaymentStatus {
+  INITIATED = 'initiated',
+  PROCESSING = 'processing',
+  SUCCESSFUL = 'successful',
+  FAILED = 'failed',
+  EXPIRED = 'expired',
+}
+
+// database/payouts.md
+export enum PayoutStatus {
+  PENDING = 'pending',
+  RELEASED = 'released',
+  ON_HOLD = 'on_hold',
+  REVERSED = 'reversed',
+}
+
+// database/orders.md — full target lifecycle. Only order_confirmed is set
+// today (Payment & Escrow, 07, on successful payment); the rest of the
+// transitions are Order & Delivery Management (08), not built yet.
+export enum DeliveryStatus {
+  ORDER_CONFIRMED = 'order_confirmed',
+  PREPARING_FOR_DISPATCH = 'preparing_for_dispatch',
+  PICKED_UP = 'picked_up',
+  IN_TRANSIT = 'in_transit',
+  OUT_FOR_DELIVERY = 'out_for_delivery',
+  DELIVERED = 'delivered',
+}

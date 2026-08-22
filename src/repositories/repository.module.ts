@@ -13,6 +13,10 @@ import { InspectionRepositoryService } from "./inspection-repository/inspection.
 import { CollectionCenterInventoryRepositoryService } from "./collection-center-inventory-repository/collection-center-inventory.repository";
 import { BiddingSessionRepositoryService } from "./bidding-session-repository/bidding-session.repository";
 import { BidRepositoryService } from "./bid-repository/bid.repository";
+import { PaymentRepositoryService } from "./payment-repository/payment.repository";
+import { OrderRepositoryService } from "./order-repository/order.repository";
+import { PayoutRepositoryService } from "./payout-repository/payout.repository";
+import { PlatformSettingsRepositoryService } from "./platform-settings-repository/platform-settings.repository";
 
 // Schemas
 import { User, UserSchema } from "src/schemas/User/user.schema";
@@ -26,11 +30,15 @@ import { Inspection, InspectionSchema } from "src/schemas/Inspection/inspection.
 import { CollectionCenterInventory, CollectionCenterInventorySchema } from "src/schemas/CollectionCenterInventory/collection-center-inventory.schema";
 import { BiddingSession, BiddingSessionSchema } from "src/schemas/BiddingSession/bidding-session.schema";
 import { Bid, BidSchema } from "src/schemas/Bid/bid.schema";
+import { Payment, PaymentSchema } from "src/schemas/Payment/payment.schema";
+import { Order, OrderSchema } from "src/schemas/Order/order.schema";
+import { Payout, PayoutSchema } from "src/schemas/Payout/payout.schema";
+import { PlatformSettings, PlatformSettingsSchema } from "src/schemas/PlatformSettings/platform-settings.schema";
 
 // Single aggregator module for every repository in the app — feature modules
 // import this once rather than wiring MongooseModule.forFeature() themselves.
-// Add new schemas/repositories here as HarvestHub's other modules (payments,
-// orders, etc.) get built out.
+// Add new schemas/repositories here as HarvestHub's other modules (orders,
+// notifications, etc.) get built out.
 @Module({
     imports: [
         MongooseModule.forFeature([
@@ -45,6 +53,10 @@ import { Bid, BidSchema } from "src/schemas/Bid/bid.schema";
             { name: CollectionCenterInventory.name, schema: CollectionCenterInventorySchema },
             { name: BiddingSession.name, schema: BiddingSessionSchema },
             { name: Bid.name, schema: BidSchema },
+            { name: Payment.name, schema: PaymentSchema },
+            { name: Order.name, schema: OrderSchema },
+            { name: Payout.name, schema: PayoutSchema },
+            { name: PlatformSettings.name, schema: PlatformSettingsSchema },
         ]),
     ],
     controllers: [],
@@ -60,6 +72,10 @@ import { Bid, BidSchema } from "src/schemas/Bid/bid.schema";
         CollectionCenterInventoryRepositoryService,
         BiddingSessionRepositoryService,
         BidRepositoryService,
+        PaymentRepositoryService,
+        OrderRepositoryService,
+        PayoutRepositoryService,
+        PlatformSettingsRepositoryService,
     ],
     exports: [
         UserRepositoryService,
@@ -73,6 +89,10 @@ import { Bid, BidSchema } from "src/schemas/Bid/bid.schema";
         CollectionCenterInventoryRepositoryService,
         BiddingSessionRepositoryService,
         BidRepositoryService,
+        PaymentRepositoryService,
+        OrderRepositoryService,
+        PayoutRepositoryService,
+        PlatformSettingsRepositoryService,
     ],
 })
 export class RepositoryModule { }

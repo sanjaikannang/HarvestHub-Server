@@ -9,7 +9,11 @@ dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 async function bootstrap() {
 
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true — needed so the Razorpay webhook handler can verify the
+  // request signature against the exact raw bytes (see
+  // src/api/payment-escrow/payment/webhook/webhook.controller.ts), not the
+  // already-JSON-parsed body Express normally hands controllers.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.use(cookieParser());
 
