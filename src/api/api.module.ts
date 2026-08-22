@@ -8,6 +8,7 @@ import { InspectorModule } from './user/inspector/inspector.module';
 import { DistrictManagementModule } from './district-management/district-management.module';
 import { CatalogManagementModule } from './catalog-management/catalog-management.module';
 import { InspectionManagementModule } from './inspection-management/inspection-management.module';
+import { CollectionCenterManagementModule } from './collection-center-management/collection-center-management.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { InspectionManagementModule } from './inspection-management/inspection-m
     DistrictManagementModule,
     CatalogManagementModule,
     InspectionManagementModule,
+    CollectionCenterManagementModule,
   ],
   controllers: [],
   providers: [],

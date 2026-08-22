@@ -7,7 +7,7 @@ import { ConfigService } from 'src/config/config.service';
 import { LoginRequest } from 'src/api/auth/login/login.request';
 import { RegisterRequest } from 'src/api/auth/register/register.request';
 import { AuthAction } from 'src/schemas/AuthActivityLog/auth-activity-log.schema';
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { UserRepositoryService } from 'src/repositories/user-repository/user.repository';
 import { ResetPasswordRequest } from 'src/api/auth/reset-password/reset-password.request';
 import { ChangePasswordRequest } from 'src/api/auth/change-password/change-password.request';
@@ -400,6 +400,71 @@ export class AuthService {
             phone: inspector.phone,
             email: inspector.email,
             districtId: inspector.districtId?.toString(),
+        }));
+    }
+
+
+    // Create Delivery Partner API Endpoint (Super Admin or District Admin) —
+    // onboarded, not self-registered (see modules/01-auth-user-management.md).
+    // Unlike Inspector, not district-scoped at creation — a delivery partner's
+    // service coverage lives in delivery-partner-profiles (module 08, not built).
+    async createDeliveryPartnerAPI(creatorUserId: string, data: { name: string; phone: string; email?: string; password: string }) {
+        const creator = await this.userRepositoryService.findById(creatorUserId);
+        if (!creator) {
+            throw new NotFoundException('Account not found');
+        }
+
+        const existingByPhone = await this.userRepositoryService.findUserByPhone(data.phone);
+        if (existingByPhone) {
+            throw new ConflictException('An account with this phone number already exists');
+        }
+
+        if (data.email) {
+            const existingByEmail = await this.userRepositoryService.findUserByEmail(data.email);
+            if (existingByEmail) {
+                throw new ConflictException('An account with this email already exists');
+            }
+        }
+
+        const passwordValidation = this.passwordService.validatePasswordStrength(data.password);
+        if (!passwordValidation.isValid) {
+            throw new BadRequestException(passwordValidation.message);
+        }
+
+        const hashedPassword = await this.passwordService.hashPassword(data.password);
+
+        const deliveryPartner = await this.userRepositoryService.create({
+            name: data.name,
+            phone: data.phone,
+            email: data.email,
+            password: hashedPassword,
+            role: UserRole.DELIVERY_PARTNER,
+            isActive: true,
+            isPhoneVerified: false,
+            isFirstLogin: true,
+            createdBy: creator._id as Types.ObjectId,
+        });
+
+        return {
+            id: (deliveryPartner._id as Types.ObjectId).toString(),
+            name: deliveryPartner.name,
+            phone: deliveryPartner.phone,
+            email: deliveryPartner.email,
+            role: deliveryPartner.role,
+        };
+    }
+
+
+    // List Delivery Partners API Endpoint (Super Admin or District Admin) —
+    // not district-scoped, per createDeliveryPartnerAPI above
+    async listDeliveryPartnersAPI() {
+        const deliveryPartners = await this.userRepositoryService.findByRoleAndDistrict(UserRole.DELIVERY_PARTNER);
+
+        return deliveryPartners.map((deliveryPartner) => ({
+            id: (deliveryPartner._id as Types.ObjectId).toString(),
+            name: deliveryPartner.name,
+            phone: deliveryPartner.phone,
+            email: deliveryPartner.email,
         }));
     }
 

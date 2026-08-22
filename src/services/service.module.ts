@@ -15,6 +15,7 @@ import { CollectionCenterService } from "./collection-center-service/collection-
 import { CategoryService } from "./category-service/category.service";
 import { ProductService } from "./product-service/product.service";
 import { InspectionService } from "./inspection-service/inspection.service";
+import { CollectionCenterInventoryService } from "./collection-center-inventory-service/collection-center-inventory.service";
 import { ConfigService } from "src/config/config.service";
 
 // Modules
@@ -49,6 +50,7 @@ import { RepositoryModule } from "src/repositories/repository.module";
         ProductService,
         InspectorService,
         InspectionService,
+        CollectionCenterInventoryService,
     ],
     exports: [
         AuthService,
@@ -64,6 +66,7 @@ import { RepositoryModule } from "src/repositories/repository.module";
         ProductService,
         InspectorService,
         InspectionService,
+        CollectionCenterInventoryService,
     ],
 })
 export class ServiceModule { }

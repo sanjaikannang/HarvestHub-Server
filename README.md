@@ -44,16 +44,31 @@ docs this scaffold was built against).
   flow from module 03 just works here too). A decision requires findings to
   already be recorded, and each inspection can only be decided once.
   `collection-center-inventory` here is a deliberately thin slice (just enough
-  to log the receipt) — full inventory CRUD/reporting is Collection Center
-  Management (05), not built.
-- **Inspector accounts** — since District Admin/Inspector account creation
-  didn't exist yet anywhere and Inspection Management needs real Inspector
-  users to assign, added `POST /auth/create-inspector` (District Admin only,
-  always assigned to the creating admin's own district) and
-  `GET /auth/inspectors` (District Admin: own district, Super Admin: all or
-  filtered) to `src/api/auth/`. `DISTRICT_ADMIN` account creation is still
-  missing — `districts/:id/assign-admin` still expects a user that already has
-  that role.
+  to log the receipt) — the rest was filled in by module 05.
+- **Collection Center Management module** (`src/api/collection-center-management/`)
+  — District Admin (own district's collection centers only)/Super Admin can
+  list/get inventory (optionally filtered by `collectionCenterId`/`status`),
+  reserve an in-storage entry for sale (`PATCH /collection-center-inventory/:id/reserve`),
+  and dispatch a reserved entry to a Delivery Partner
+  (`PATCH /collection-center-inventory/:id/dispatch`). Both reserve and
+  dispatch are exposed as manual admin actions for now — per requirement.md
+  they're normally triggered automatically by a successful sale + payment
+  (Bidding Engine 06 / Payment Escrow 07) and by the Delivery Partner
+  recording pickup (Order & Delivery Management 08), none of which are built
+  yet. The business rule "a product can't go live for bidding unless
+  in_storage" also can't be wired up until Bidding Engine (06) exists.
+- **Inspector & Delivery Partner accounts** — account creation for these two
+  onboarded-not-self-registered roles didn't exist anywhere, and both
+  Inspection Management (04) and this module need real users to assign, so:
+  `POST /auth/create-inspector` + `GET /auth/inspectors` (District Admin
+  only to create — always assigned to the creating admin's own district;
+  District Admin: own district, Super Admin: all or filtered, to list), and
+  `POST /auth/create-delivery-partner` + `GET /auth/delivery-partners`
+  (Super Admin *or* District Admin can create, per requirement.md; not
+  district-scoped at all, since a delivery partner's real coverage area lives
+  in `delivery-partner-profiles`, module 08, not built). `DISTRICT_ADMIN`
+  account creation is still missing — `districts/:id/assign-admin` still
+  expects a user that already has that role.
 - **Roles** (`src/utils/enum.ts`) — `SUPER_ADMIN`, `DISTRICT_ADMIN`, `INSPECTOR`,
   `FARMER`, `BUYER`, `DELIVERY_PARTNER` all have at least one working module now.
 - **One working example endpoint per existing role** — `GET /<role>/profile`,
@@ -67,15 +82,14 @@ docs this scaffold was built against).
 
 ## What's intentionally NOT built yet
 
-Everything in `modules/05` through `modules/12` (full Collection Center
-inventory management, bidding, payments/escrow, orders/delivery,
-notifications, disputes, admin reporting, localization) — those are real
-business modules to build next, using the same layering pattern demonstrated
-so far. `database/*.md` describes the target schema for each of those
-collections. `product-interests` (buyer "mark interested" + reminder
-tracking) is deferred to whichever of Bidding Engine (06) / Notification (09)
-actually needs it — its only stated purpose is feeding a reminder those
-modules haven't built yet.
+Everything in `modules/06` through `modules/12` (bidding, payments/escrow,
+orders/delivery, notifications, disputes, admin reporting, localization) —
+those are real business modules to build next, using the same layering
+pattern demonstrated so far. `database/*.md` describes the target schema for
+each of those collections. `product-interests` (buyer "mark interested" +
+reminder tracking) is deferred to whichever of Bidding Engine (06) /
+Notification (09) actually needs it — its only stated purpose is feeding a
+reminder those modules haven't built yet.
 
 Also not built within District Management itself: the business rule blocking
 district deactivation while it has products in an active lifecycle state

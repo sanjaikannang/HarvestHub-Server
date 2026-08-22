@@ -21,6 +21,8 @@ import { ForgotPasswordController } from './forgot-password/forgot-password.cont
 import { ResetPasswordController } from './reset-password/reset-password.controller';
 import { CreateInspectorController } from './create-inspector/create-inspector.controller';
 import { ListInspectorsController } from './list-inspectors/list-inspectors.controller';
+import { CreateDeliveryPartnerController } from './create-delivery-partner/create-delivery-partner.controller';
+import { ListDeliveryPartnersController } from './list-delivery-partners/list-delivery-partners.controller';
 
 // Guards
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
@@ -55,6 +57,8 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         ResetPasswordController,
         CreateInspectorController,
         ListInspectorsController,
+        CreateDeliveryPartnerController,
+        ListDeliveryPartnersController,
     ],
     providers: [
         ConfigService,
