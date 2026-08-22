@@ -9,6 +9,7 @@ import { RegisterRequest } from 'src/api/auth/register/register.request';
 import { AuthAction } from 'src/schemas/AuthActivityLog/auth-activity-log.schema';
 import { Injectable, UnauthorizedException, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { UserRepositoryService } from 'src/repositories/user-repository/user.repository';
+import { DeliveryPartnerProfileRepositoryService } from 'src/repositories/delivery-partner-profile-repository/delivery-partner-profile.repository';
 import { ResetPasswordRequest } from 'src/api/auth/reset-password/reset-password.request';
 import { ChangePasswordRequest } from 'src/api/auth/change-password/change-password.request';
 import { AuthActivityLogRepositoryService } from 'src/repositories/auth-activity-log-repository/auth-activity-log.repository';
@@ -30,6 +31,7 @@ const SELF_REGISTERABLE_ROLES = [UserRole.FARMER, UserRole.BUYER];
 export class AuthService {
     constructor(
         private readonly userRepositoryService: UserRepositoryService,
+        private readonly deliveryPartnerProfileRepositoryService: DeliveryPartnerProfileRepositoryService,
         private readonly authActivityLogRepositoryService: AuthActivityLogRepositoryService,
         private readonly passwordService: PasswordService,
         private readonly jwtService: AuthJwtService,
@@ -406,9 +408,12 @@ export class AuthService {
 
     // Create Delivery Partner API Endpoint (Super Admin or District Admin) —
     // onboarded, not self-registered (see modules/01-auth-user-management.md).
-    // Unlike Inspector, not district-scoped at creation — a delivery partner's
-    // service coverage lives in delivery-partner-profiles (module 08, not built).
-    async createDeliveryPartnerAPI(creatorUserId: string, data: { name: string; phone: string; email?: string; password: string }) {
+    // Also creates the DeliveryPartnerProfile (database/delivery-partner-profiles.md)
+    // that Order & Delivery Management's auto-assignment logic matches against.
+    async createDeliveryPartnerAPI(creatorUserId: string, data: {
+        name: string; phone: string; email?: string; password: string;
+        districtsServiced: string[]; vehicleType: string; vehicleNumber: string; capacityKg: number;
+    }) {
         const creator = await this.userRepositoryService.findById(creatorUserId);
         if (!creator) {
             throw new NotFoundException('Account not found');
@@ -443,6 +448,14 @@ export class AuthService {
             isPhoneVerified: false,
             isFirstLogin: true,
             createdBy: creator._id as Types.ObjectId,
+        });
+
+        await this.deliveryPartnerProfileRepositoryService.create({
+            userId: deliveryPartner._id as Types.ObjectId,
+            districtsServiced: data.districtsServiced.map((id) => new Types.ObjectId(id)),
+            vehicleType: data.vehicleType,
+            vehicleNumber: data.vehicleNumber,
+            capacityKg: data.capacityKg,
         });
 
         return {

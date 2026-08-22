@@ -17,6 +17,7 @@ import { PaymentRepositoryService } from "./payment-repository/payment.repositor
 import { OrderRepositoryService } from "./order-repository/order.repository";
 import { PayoutRepositoryService } from "./payout-repository/payout.repository";
 import { PlatformSettingsRepositoryService } from "./platform-settings-repository/platform-settings.repository";
+import { DeliveryPartnerProfileRepositoryService } from "./delivery-partner-profile-repository/delivery-partner-profile.repository";
 
 // Schemas
 import { User, UserSchema } from "src/schemas/User/user.schema";
@@ -34,6 +35,7 @@ import { Payment, PaymentSchema } from "src/schemas/Payment/payment.schema";
 import { Order, OrderSchema } from "src/schemas/Order/order.schema";
 import { Payout, PayoutSchema } from "src/schemas/Payout/payout.schema";
 import { PlatformSettings, PlatformSettingsSchema } from "src/schemas/PlatformSettings/platform-settings.schema";
+import { DeliveryPartnerProfile, DeliveryPartnerProfileSchema } from "src/schemas/DeliveryPartnerProfile/delivery-partner-profile.schema";
 
 // Single aggregator module for every repository in the app — feature modules
 // import this once rather than wiring MongooseModule.forFeature() themselves.
@@ -57,6 +59,7 @@ import { PlatformSettings, PlatformSettingsSchema } from "src/schemas/PlatformSe
             { name: Order.name, schema: OrderSchema },
             { name: Payout.name, schema: PayoutSchema },
             { name: PlatformSettings.name, schema: PlatformSettingsSchema },
+            { name: DeliveryPartnerProfile.name, schema: DeliveryPartnerProfileSchema },
         ]),
     ],
     controllers: [],
@@ -76,6 +79,7 @@ import { PlatformSettings, PlatformSettingsSchema } from "src/schemas/PlatformSe
         OrderRepositoryService,
         PayoutRepositoryService,
         PlatformSettingsRepositoryService,
+        DeliveryPartnerProfileRepositoryService,
     ],
     exports: [
         UserRepositoryService,
@@ -93,6 +97,7 @@ import { PlatformSettings, PlatformSettingsSchema } from "src/schemas/PlatformSe
         OrderRepositoryService,
         PayoutRepositoryService,
         PlatformSettingsRepositoryService,
+        DeliveryPartnerProfileRepositoryService,
     ],
 })
 export class RepositoryModule { }

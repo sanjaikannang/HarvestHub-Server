@@ -10,6 +10,7 @@ import { OrderService } from 'src/services/order-service/order.service';
 import { PayoutService } from 'src/services/payout-service/payout.service';
 import { PlatformSettingsService } from 'src/services/platform-settings-service/platform-settings.service';
 import { PaymentGatewayService } from 'src/services/payment-gateway-service/payment-gateway.service';
+import { OrderGateway } from 'src/gateways/order.gateway';
 
 // Controllers — Payment
 import { CheckoutController } from './payment/checkout/checkout.controller';
@@ -22,6 +23,8 @@ import { GetPaymentController } from './payment/get-payment/get-payment.controll
 import { ListMyOrdersController } from './order/list-my-orders/list-my-orders.controller';
 import { ListOrdersController } from './order/list-orders/list-orders.controller';
 import { GetOrderController } from './order/get-order/get-order.controller';
+import { UpdateOrderStatusController } from './order/update-order-status/update-order-status.controller';
+import { AssignDeliveryPartnerController } from './order/assign-delivery-partner/assign-delivery-partner.controller';
 
 // Controllers — Payout
 import { ListMyPayoutsController } from './payout/list-my-payouts/list-my-payouts.controller';
@@ -53,6 +56,8 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         ListMyOrdersController,
         ListOrdersController,
         GetOrderController,
+        UpdateOrderStatusController,
+        AssignDeliveryPartnerController,
 
         // Literal sub-paths before /payouts/:id
         ListMyPayoutsController,
@@ -68,6 +73,7 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         PayoutService,
         PlatformSettingsService,
         PaymentGatewayService,
+        OrderGateway,
         JwtAuthGuard,
         RoleGuard,
     ],
@@ -76,6 +82,7 @@ import { RepositoryModule } from 'src/repositories/repository.module';
         OrderService,
         PayoutService,
         PlatformSettingsService,
+        OrderGateway,
     ],
 })
 export class PaymentEscrowModule { }

@@ -1,4 +1,4 @@
-import { PreferredLanguage, UserRole } from "src/utils/enum";
+import { DeliveryPartnerAvailability, PreferredLanguage, UserRole } from "src/utils/enum";
 
 export class DeliveryPartnerProfileData {
     id: string;
@@ -9,6 +9,13 @@ export class DeliveryPartnerProfileData {
     districtId?: string;
     preferredLanguage: PreferredLanguage;
     isPhoneVerified: boolean;
+    districtsServiced?: string[];
+    vehicleType?: string;
+    vehicleNumber?: string;
+    capacityKg?: number;
+    currentStatus?: DeliveryPartnerAvailability;
+    activeOrderCount?: number;
+    rating?: number;
 }
 
 export class GetMyProfileResponse {

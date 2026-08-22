@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, MinLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, MinLength, IsArray, IsMongoId, IsNumber, Min, ArrayMinSize } from 'class-validator';
 
 export class CreateDeliveryPartnerRequest {
 
@@ -17,5 +17,22 @@ export class CreateDeliveryPartnerRequest {
     @IsString()
     @MinLength(8)
     password: string;
+
+    @IsArray()
+    @ArrayMinSize(1)
+    @IsMongoId({ each: true })
+    districtsServiced: string[];
+
+    @IsString()
+    @IsNotEmpty()
+    vehicleType: string;
+
+    @IsString()
+    @IsNotEmpty()
+    vehicleNumber: string;
+
+    @IsNumber()
+    @Min(1)
+    capacityKg: number;
 
 }

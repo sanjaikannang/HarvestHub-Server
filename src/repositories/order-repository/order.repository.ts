@@ -1,7 +1,8 @@
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { DeliveryStatus } from 'src/utils/enum';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { Order, OrderDocument } from 'src/schemas/Order/order.schema';
+import { Order, OrderDocument, DeliveryStatusHistoryEntry } from 'src/schemas/Order/order.schema';
 
 @Injectable()
 export class OrderRepositoryService {
@@ -67,6 +68,45 @@ export class OrderRepositoryService {
             return await this.orderModel.find(query).sort({ createdAt: -1 }).exec();
         } catch (error) {
             throw new InternalServerErrorException('Failed to list orders', error);
+        }
+    }
+
+
+    async findByDeliveryPartnerId(deliveryPartnerId: string): Promise<OrderDocument[]> {
+        try {
+            return await this.orderModel.find({ deliveryPartnerId: new Types.ObjectId(deliveryPartnerId) }).sort({ createdAt: -1 }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find orders by delivery partner', error);
+        }
+    }
+
+
+    // Set on auto-assignment (Payment success) or manual reassignment (District
+    // Admin/Super Admin) — see database/orders.md
+    async assignDeliveryPartner(orderId: string, deliveryPartnerId: string): Promise<OrderDocument | null> {
+        try {
+            return await this.orderModel.findByIdAndUpdate(
+                orderId,
+                { deliveryPartnerId: new Types.ObjectId(deliveryPartnerId) },
+                { new: true },
+            ).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to assign delivery partner', error);
+        }
+    }
+
+
+    // Advances the delivery status and appends to the history array in one
+    // atomic write — see OrderService.updateOrderStatusAPI
+    async updateDeliveryStatus(orderId: string, status: DeliveryStatus, historyEntry: DeliveryStatusHistoryEntry): Promise<OrderDocument | null> {
+        try {
+            return await this.orderModel.findByIdAndUpdate(
+                orderId,
+                { deliveryStatus: status, $push: { deliveryStatusHistory: historyEntry } },
+                { new: true },
+            ).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to update delivery status', error);
         }
     }
 

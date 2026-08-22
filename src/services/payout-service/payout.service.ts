@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { PayoutStatus, UserRole } from 'src/utils/enum';
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DistrictService, RequestingUser } from 'src/services/district-service/district.service';
 import { OrderRepositoryService } from 'src/repositories/order-repository/order.repository';
 import { PayoutRepositoryService } from 'src/repositories/payout-repository/payout.repository';
@@ -8,6 +8,8 @@ import { PayoutDocument } from 'src/schemas/Payout/payout.schema';
 
 @Injectable()
 export class PayoutService {
+    private readonly logger = new Logger(PayoutService.name);
+
     constructor(
         private readonly payoutRepositoryService: PayoutRepositoryService,
         private readonly orderRepositoryService: OrderRepositoryService,
@@ -65,6 +67,24 @@ export class PayoutService {
 
         const updated = await this.payoutRepositoryService.release(payoutId);
         return this.toSummary(updated!);
+    }
+
+
+    // Releases the payout tied to an order the moment it's marked Delivered —
+    // called by OrderService.updateOrderStatusAPI, not user-facing (requirement.md:
+    // "No payout is released before delivery confirmation"). Idempotent no-op
+    // if there's no payout yet or it's already past pending.
+    async releaseForDeliveredOrderAPI(orderId: string): Promise<void> {
+        const payout = await this.payoutRepositoryService.findByOrderId(orderId);
+        if (!payout) {
+            this.logger.warn(`No payout found for delivered order ${orderId}`);
+            return;
+        }
+        if (payout.status !== PayoutStatus.PENDING) {
+            return;
+        }
+
+        await this.payoutRepositoryService.release((payout._id as Types.ObjectId).toString());
     }
 
 

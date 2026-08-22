@@ -7,15 +7,15 @@ import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { OrderService } from 'src/services/order-service/order.service';
 import { ListMyOrdersResponse } from './list-my-orders.response';
 
-// Buyer sees orders they placed; Farmer sees orders on their own products
-// (see OrderService.listMyOrdersAPI)
+// Buyer sees orders they placed; Farmer sees orders on their own products;
+// Delivery Partner sees orders assigned to them (see OrderService.listMyOrdersAPI)
 @Controller('orders/mine')
 export class ListMyOrdersController {
     constructor(private readonly orderService: OrderService) { }
 
     @Get()
     @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles(UserRole.BUYER, UserRole.FARMER)
+    @Roles(UserRole.BUYER, UserRole.FARMER, UserRole.DELIVERY_PARTNER)
     async listMyOrders(@Req() req: Request): Promise<ListMyOrdersResponse> {
         const requestingUser = (req as any).user;
         const data = await this.orderService.listMyOrdersAPI(requestingUser);

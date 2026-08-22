@@ -150,3 +150,11 @@ export enum DeliveryStatus {
   OUT_FOR_DELIVERY = 'out_for_delivery',
   DELIVERED = 'delivered',
 }
+
+// database/delivery-partner-profiles.md — used for auto-assignment's
+// least-loaded/available matching
+export enum DeliveryPartnerAvailability {
+  AVAILABLE = 'available',
+  BUSY = 'busy',
+  OFFLINE = 'offline',
+}

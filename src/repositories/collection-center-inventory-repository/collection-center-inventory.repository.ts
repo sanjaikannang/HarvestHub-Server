@@ -34,6 +34,17 @@ export class CollectionCenterInventoryRepositoryService {
     }
 
 
+    // Unique per product (see schema index) — used by Payment/Order & Delivery
+    // to reserve/dispatch the matching physical stock
+    async findByProductId(productId: string): Promise<CollectionCenterInventoryDocument | null> {
+        try {
+            return await this.inventoryModel.findOne({ productId: new Types.ObjectId(productId) }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find inventory entry by product', error);
+        }
+    }
+
+
     // List inventory, optionally scoped to a set of collection centers and/or a status
     async findAll(filter: { collectionCenterIds?: string[]; status?: InventoryStatus }): Promise<CollectionCenterInventoryDocument[]> {
         try {

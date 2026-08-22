@@ -13,7 +13,7 @@ export class GetOrderController {
 
     @Get(':id')
     @UseGuards(JwtAuthGuard, RoleGuard)
-    @Roles(UserRole.SUPER_ADMIN, UserRole.DISTRICT_ADMIN, UserRole.BUYER, UserRole.FARMER)
+    @Roles(UserRole.SUPER_ADMIN, UserRole.DISTRICT_ADMIN, UserRole.BUYER, UserRole.FARMER, UserRole.DELIVERY_PARTNER)
     async getOrder(@Param('id') id: string, @Req() req: Request): Promise<GetOrderResponse> {
         const requestingUser = (req as any).user;
         const data = await this.orderService.getOrderByIdAPI(id, requestingUser);

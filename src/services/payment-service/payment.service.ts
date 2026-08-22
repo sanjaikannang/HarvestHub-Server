@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { DeliveryStatus, PaymentStatus, PayoutStatus, ProductStatus } from 'src/utils/enum';
+import { DeliveryStatus, InventoryStatus, PaymentStatus, PayoutStatus, ProductStatus } from 'src/utils/enum';
 import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PaymentGatewayService } from 'src/services/payment-gateway-service/payment-gateway.service';
 import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
@@ -9,6 +9,8 @@ import { PaymentRepositoryService } from 'src/repositories/payment-repository/pa
 import { OrderRepositoryService } from 'src/repositories/order-repository/order.repository';
 import { PayoutRepositoryService } from 'src/repositories/payout-repository/payout.repository';
 import { PlatformSettingsRepositoryService } from 'src/repositories/platform-settings-repository/platform-settings.repository';
+import { CollectionCenterInventoryRepositoryService } from 'src/repositories/collection-center-inventory-repository/collection-center-inventory.repository';
+import { DeliveryPartnerProfileRepositoryService } from 'src/repositories/delivery-partner-profile-repository/delivery-partner-profile.repository';
 import { Payment, PaymentDocument } from 'src/schemas/Payment/payment.schema';
 import { OrderDocument } from 'src/schemas/Order/order.schema';
 import { DeliveryAddress } from 'src/schemas/DeliveryAddress/delivery-address.schema';
@@ -33,6 +35,8 @@ export class PaymentService {
         private readonly bidRepositoryService: BidRepositoryService,
         private readonly productRepositoryService: ProductRepositoryService,
         private readonly paymentGatewayService: PaymentGatewayService,
+        private readonly collectionCenterInventoryRepositoryService: CollectionCenterInventoryRepositoryService,
+        private readonly deliveryPartnerProfileRepositoryService: DeliveryPartnerProfileRepositoryService,
     ) { }
 
 
@@ -217,7 +221,7 @@ export class PaymentService {
         const quantity = product.verifiedQuantity ?? product.estimatedQuantity;
         const now = new Date();
 
-        const order = await this.orderRepositoryService.create({
+        let order = await this.orderRepositoryService.create({
             productId: product._id as Types.ObjectId,
             sessionId: payment.sessionId,
             paymentId: payment._id as Types.ObjectId,
@@ -231,6 +235,33 @@ export class PaymentService {
             deliveryStatus: DeliveryStatus.ORDER_CONFIRMED,
             deliveryStatusHistory: [{ status: DeliveryStatus.ORDER_CONFIRMED, timestamp: now, updatedBy: 'system' }],
         });
+
+        // Reserve the matching Collection Center stock for this sale — was a
+        // manual admin action (Collection Center Management, 05) until a real
+        // sale existed to trigger it automatically, per its own TODO.
+        const inventoryEntry = await this.collectionCenterInventoryRepositoryService.findByProductId((product._id as Types.ObjectId).toString());
+        if (inventoryEntry && inventoryEntry.status === InventoryStatus.IN_STORAGE) {
+            await this.collectionCenterInventoryRepositoryService.updateStatus(
+                (inventoryEntry._id as Types.ObjectId).toString(),
+                InventoryStatus.RESERVED_FOR_SALE,
+                { reservedAt: now },
+            );
+        }
+
+        // Auto-assign the least-loaded available Delivery Partner covering the
+        // product's district (requirement.md) — if none is available, the
+        // order is left unassigned for a District Admin to assign manually
+        // (OrderService.assignDeliveryPartnerManuallyAPI).
+        const partnerProfile = await this.deliveryPartnerProfileRepositoryService.findLeastLoadedAvailable(product.districtId.toString());
+        if (partnerProfile) {
+            const assigned = await this.orderRepositoryService.assignDeliveryPartner((order._id as Types.ObjectId).toString(), partnerProfile.userId.toString());
+            if (assigned) {
+                order = assigned;
+            }
+            await this.deliveryPartnerProfileRepositoryService.incrementActiveOrderCount(partnerProfile.userId.toString());
+        } else {
+            this.logger.warn(`No available delivery partner in district ${product.districtId.toString()} for order ${(order._id as Types.ObjectId).toString()} — needs manual assignment`);
+        }
 
         const settings = await this.platformSettingsRepositoryService.getOrCreate();
         const commissionPercentage = settings.commissionPercentage;
