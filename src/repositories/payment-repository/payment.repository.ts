@@ -81,6 +81,31 @@ export class PaymentRepositoryService {
     }
 
 
+    // Open attempts entering their reminder window (paymentWindowExpiresAt
+    // within thresholdMs) that haven't already been reminded — see
+    // NotificationService's payment-window-reminder cron
+    async findDueForReminder(now: Date, thresholdMs: number): Promise<PaymentDocument[]> {
+        try {
+            return await this.paymentModel.find({
+                status: { $in: ACTIVE_STATUSES },
+                reminderSent: false,
+                paymentWindowExpiresAt: { $lte: new Date(now.getTime() + thresholdMs), $gt: now },
+            }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to find payments due for a reminder', error);
+        }
+    }
+
+
+    async markReminderSent(id: string): Promise<void> {
+        try {
+            await this.paymentModel.updateOne({ _id: id }, { reminderSent: true }).exec();
+        } catch (error) {
+            throw new InternalServerErrorException('Failed to mark payment reminder sent', error);
+        }
+    }
+
+
     async findByBuyerId(buyerId: string): Promise<PaymentDocument[]> {
         try {
             return await this.paymentModel.find({ buyerId: new Types.ObjectId(buyerId) }).sort({ initiatedAt: -1 }).exec();

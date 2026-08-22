@@ -181,6 +181,15 @@ export class DistrictService {
     }
 
 
+    // The reverse lookup — a district's assigned admin, if any. Shared by
+    // every module that needs to alert the District Admin about something
+    // happening in their district (see NotificationService call sites).
+    async getDistrictAdminUserId(districtId: string): Promise<string | undefined> {
+        const district = await this.districtRepositoryService.findById(districtId);
+        return district?.districtAdminId?.toString();
+    }
+
+
     private toSummary(district: { _id: Types.ObjectId; name: string; state: string; districtAdminId?: Types.ObjectId; isActive: boolean }) {
         return {
             id: (district._id as Types.ObjectId).toString(),

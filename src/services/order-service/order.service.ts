@@ -1,11 +1,13 @@
 import { Types } from 'mongoose';
-import { DeliveryStatus, InventoryStatus, UserRole } from 'src/utils/enum';
+import { DeliveryStatus, InventoryStatus, NotificationType, UserRole } from 'src/utils/enum';
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { DistrictService, RequestingUser } from 'src/services/district-service/district.service';
 import { PayoutService } from 'src/services/payout-service/payout.service';
+import { NotificationService } from 'src/services/notification-service/notification.service';
 import { OrderGateway } from 'src/gateways/order.gateway';
 import { UserRepositoryService } from 'src/repositories/user-repository/user.repository';
 import { OrderRepositoryService } from 'src/repositories/order-repository/order.repository';
+import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
 import { CollectionCenterInventoryRepositoryService } from 'src/repositories/collection-center-inventory-repository/collection-center-inventory.repository';
 import { DeliveryPartnerProfileRepositoryService } from 'src/repositories/delivery-partner-profile-repository/delivery-partner-profile.repository';
 import { OrderDocument } from 'src/schemas/Order/order.schema';
@@ -29,9 +31,11 @@ export class OrderService {
         private readonly orderRepositoryService: OrderRepositoryService,
         private readonly districtService: DistrictService,
         private readonly userRepositoryService: UserRepositoryService,
+        private readonly productRepositoryService: ProductRepositoryService,
         private readonly collectionCenterInventoryRepositoryService: CollectionCenterInventoryRepositoryService,
         private readonly deliveryPartnerProfileRepositoryService: DeliveryPartnerProfileRepositoryService,
         private readonly payoutService: PayoutService,
+        private readonly notificationService: NotificationService,
         private readonly orderGateway: OrderGateway,
     ) { }
 
@@ -132,6 +136,16 @@ export class OrderService {
 
         const summary = this.toSummary(updated);
         this.orderGateway.emitStatusUpdated(orderId, { orderId, deliveryStatus: newStatus, timestamp: now });
+
+        const product = await this.productRepositoryService.findById(order.productId.toString());
+        if (product) {
+            await this.notificationService.notifyAPI(
+                order.buyerId.toString(),
+                NotificationType.ORDER_STATUS_CHANGE,
+                { productName: product.name, status: newStatus.replace(/_/g, ' ') },
+                { type: 'order', id: orderId },
+            );
+        }
 
         return summary;
     }

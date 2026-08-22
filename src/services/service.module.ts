@@ -16,6 +16,10 @@ import { CategoryService } from "./category-service/category.service";
 import { ProductService } from "./product-service/product.service";
 import { InspectionService } from "./inspection-service/inspection.service";
 import { CollectionCenterInventoryService } from "./collection-center-inventory-service/collection-center-inventory.service";
+import { NotificationService } from "./notification-service/notification.service";
+import { NotificationTemplateService } from "./notification-template-service/notification-template.service";
+import { SmsService } from "./sms-service/sms.service";
+import { NotificationGateway } from "src/gateways/notification.gateway";
 import { ConfigService } from "src/config/config.service";
 
 // Modules
@@ -51,6 +55,10 @@ import { RepositoryModule } from "src/repositories/repository.module";
         InspectorService,
         InspectionService,
         CollectionCenterInventoryService,
+        NotificationService,
+        NotificationTemplateService,
+        SmsService,
+        NotificationGateway,
     ],
     exports: [
         AuthService,
@@ -67,6 +75,10 @@ import { RepositoryModule } from "src/repositories/repository.module";
         InspectorService,
         InspectionService,
         CollectionCenterInventoryService,
+        NotificationService,
+        NotificationTemplateService,
+        SmsService,
+        NotificationGateway,
     ],
 })
 export class ServiceModule { }

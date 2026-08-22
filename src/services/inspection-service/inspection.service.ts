@@ -1,7 +1,8 @@
 import { Types } from 'mongoose';
-import { AdminDecision, CollectionMethod, InventoryStatus, ProductStatus, RecommendedVerdict, UserRole } from 'src/utils/enum';
+import { AdminDecision, CollectionMethod, InventoryStatus, NotificationChannel, NotificationType, ProductStatus, RecommendedVerdict, UserRole } from 'src/utils/enum';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DistrictService, RequestingUser } from 'src/services/district-service/district.service';
+import { NotificationService } from 'src/services/notification-service/notification.service';
 import { UserRepositoryService } from 'src/repositories/user-repository/user.repository';
 import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
 import { InspectionRepositoryService } from 'src/repositories/inspection-repository/inspection.repository';
@@ -42,6 +43,7 @@ export class InspectionService {
         private readonly districtService: DistrictService,
         private readonly collectionCenterRepositoryService: CollectionCenterRepositoryService,
         private readonly collectionCenterInventoryRepositoryService: CollectionCenterInventoryRepositoryService,
+        private readonly notificationService: NotificationService,
     ) { }
 
 
@@ -86,6 +88,13 @@ export class InspectionService {
             inspectionId: inspection._id as Types.ObjectId,
         });
 
+        await this.notificationService.notifyAPI(
+            product.farmerId.toString(),
+            NotificationType.INSPECTION_SCHEDULED,
+            { productName: product.name, scheduledDate: data.scheduledDate.toISOString().slice(0, 10) },
+            { type: 'product', id: data.productId },
+        );
+
         return this.toSummary(inspection);
     }
 
@@ -110,6 +119,17 @@ export class InspectionService {
         await this.productRepositoryService.updateDetails(inspection.productId.toString(), {
             status: ProductStatus.INSPECTED,
         });
+
+        const product = await this.productRepositoryService.findById(inspection.productId.toString());
+        const districtAdminId = await this.districtService.getDistrictAdminUserId(inspection.districtId.toString());
+        if (product && districtAdminId) {
+            await this.notificationService.notifyAPI(
+                districtAdminId,
+                NotificationType.INSPECTION_REPORT_READY,
+                { productName: product.name },
+                { type: 'inspection', id: inspectionId },
+            );
+        }
 
         return this.toSummary(updated!);
     }
@@ -164,6 +184,7 @@ export class InspectionService {
 
         const updated = await this.inspectionRepositoryService.recordDecision(inspectionId, decision, requestingUser.sub, data.reason);
         const productId = inspection.productId.toString();
+        const product = await this.productRepositoryService.findById(productId);
 
         if (decision === AdminDecision.APPROVED) {
             // Goes straight to Listed, not just Approved — by the time inventory is
@@ -174,7 +195,7 @@ export class InspectionService {
                 status: ProductStatus.LISTED,
                 verifiedQuantity: inspection.verifiedQuantity,
                 qualityGrade: inspection.qualityGrade,
-                finalStartingPrice: (await this.productRepositoryService.findById(productId))!.startingPrice,
+                finalStartingPrice: product!.startingPrice,
             });
 
             await this.collectionCenterInventoryRepositoryService.create({
@@ -188,6 +209,22 @@ export class InspectionService {
             await this.productRepositoryService.updateStatus(productId, ProductStatus.REJECTED, { rejectionReason: data.reason });
         } else {
             await this.productRepositoryService.updateStatus(productId, ProductStatus.CHANGES_REQUESTED, { changeRequestNotes: data.reason });
+        }
+
+        if (product) {
+            const notificationType = decision === AdminDecision.APPROVED
+                ? NotificationType.PRODUCT_APPROVED
+                : decision === AdminDecision.REJECTED
+                    ? NotificationType.PRODUCT_REJECTED
+                    : NotificationType.CHANGES_REQUESTED;
+
+            await this.notificationService.notifyAPI(
+                product.farmerId.toString(),
+                notificationType,
+                { productName: product.name, reason: data.reason ?? '' },
+                { type: 'product', id: productId },
+                [NotificationChannel.IN_APP, NotificationChannel.SMS],
+            );
         }
 
         return this.toSummary(updated!);

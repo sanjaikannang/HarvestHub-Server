@@ -51,6 +51,11 @@ export class Payment {
     @Prop()
     completedAt?: Date;
 
+    // Guards the payment-window-reminder cron against re-notifying the buyer
+    // every tick once they're inside the reminder window (see NotificationService)
+    @Prop({ default: false })
+    reminderSent: boolean;
+
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

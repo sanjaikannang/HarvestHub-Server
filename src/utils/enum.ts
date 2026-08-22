@@ -139,9 +139,7 @@ export enum PayoutStatus {
   REVERSED = 'reversed',
 }
 
-// database/orders.md — full target lifecycle. Only order_confirmed is set
-// today (Payment & Escrow, 07, on successful payment); the rest of the
-// transitions are Order & Delivery Management (08), not built yet.
+// database/orders.md
 export enum DeliveryStatus {
   ORDER_CONFIRMED = 'order_confirmed',
   PREPARING_FOR_DISPATCH = 'preparing_for_dispatch',
@@ -157,4 +155,38 @@ export enum DeliveryPartnerAvailability {
   AVAILABLE = 'available',
   BUSY = 'busy',
   OFFLINE = 'offline',
+}
+
+// database/notifications.md, database/notification-templates.md
+export enum NotificationChannel {
+  IN_APP = 'in_app',
+  SMS = 'sms',
+  PUSH = 'push',
+  EMAIL = 'email',
+}
+
+// One entry per event in modules/09-notification/requirement.md — matches a
+// notification-templates.templateKey. "Interested-product" bidding reminders
+// and district-admin dispute alerts are intentionally not implemented: the
+// former needs a buyer watchlist/follow feature that doesn't exist, the
+// latter needs the Dispute module, neither built yet.
+export enum NotificationType {
+  SUBMISSION_RECEIVED = 'submission_received',
+  INSPECTION_SCHEDULED = 'inspection_scheduled',
+  PRODUCT_APPROVED = 'product_approved',
+  PRODUCT_REJECTED = 'product_rejected',
+  CHANGES_REQUESTED = 'changes_requested',
+  PRODUCT_SOLD = 'product_sold',
+  PRODUCT_UNSOLD = 'product_unsold',
+  PAYOUT_RELEASED = 'payout_released',
+  OUTBID_ALERT = 'outbid_alert',
+  BID_WON = 'bid_won',
+  PAYMENT_WINDOW_REMINDER = 'payment_window_reminder',
+  PAYMENT_SUCCESS = 'payment_success',
+  PAYMENT_FAILED = 'payment_failed',
+  ORDER_STATUS_CHANGE = 'order_status_change',
+  NEW_PRODUCT_SUBMITTED = 'new_product_submitted',
+  INSPECTION_REPORT_READY = 'inspection_report_ready',
+  DELIVERY_PARTNER_UNAVAILABLE = 'delivery_partner_unavailable',
+  NEW_ORDER_ASSIGNED = 'new_order_assigned',
 }

@@ -1,7 +1,8 @@
 import { Types } from 'mongoose';
-import { CollectionMethod, ProductStatus, UnitOfMeasure, UserRole } from 'src/utils/enum';
+import { CollectionMethod, NotificationType, ProductStatus, UnitOfMeasure, UserRole } from 'src/utils/enum';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DistrictService, RequestingUser } from 'src/services/district-service/district.service';
+import { NotificationService } from 'src/services/notification-service/notification.service';
 import { UserRepositoryService } from 'src/repositories/user-repository/user.repository';
 import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
 import { CategoryRepositoryService } from 'src/repositories/category-repository/category.repository';
@@ -47,6 +48,7 @@ export class ProductService {
         private readonly userRepositoryService: UserRepositoryService,
         private readonly districtService: DistrictService,
         private readonly auditLogRepositoryService: AuditLogRepositoryService,
+        private readonly notificationService: NotificationService,
     ) { }
 
 
@@ -90,6 +92,19 @@ export class ProductService {
             collectionMethod: data.collectionMethod,
             status: ProductStatus.SUBMITTED,
         });
+
+        const productId = (product._id as Types.ObjectId).toString();
+        await this.notificationService.notifyAPI(farmerId, NotificationType.SUBMISSION_RECEIVED, { productName: product.name }, { type: 'product', id: productId });
+
+        const districtAdminId = await this.districtService.getDistrictAdminUserId(farmer.districtId.toString());
+        if (districtAdminId) {
+            await this.notificationService.notifyAPI(
+                districtAdminId,
+                NotificationType.NEW_PRODUCT_SUBMITTED,
+                { productName: product.name, farmerName: farmer.name },
+                { type: 'product', id: productId },
+            );
+        }
 
         return this.toSummary(product);
     }

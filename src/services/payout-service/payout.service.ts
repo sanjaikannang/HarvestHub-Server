@@ -1,9 +1,11 @@
 import { Types } from 'mongoose';
-import { PayoutStatus, UserRole } from 'src/utils/enum';
+import { NotificationChannel, NotificationType, PayoutStatus, UserRole } from 'src/utils/enum';
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DistrictService, RequestingUser } from 'src/services/district-service/district.service';
+import { NotificationService } from 'src/services/notification-service/notification.service';
 import { OrderRepositoryService } from 'src/repositories/order-repository/order.repository';
 import { PayoutRepositoryService } from 'src/repositories/payout-repository/payout.repository';
+import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
 import { PayoutDocument } from 'src/schemas/Payout/payout.schema';
 
 @Injectable()
@@ -13,7 +15,9 @@ export class PayoutService {
     constructor(
         private readonly payoutRepositoryService: PayoutRepositoryService,
         private readonly orderRepositoryService: OrderRepositoryService,
+        private readonly productRepositoryService: ProductRepositoryService,
         private readonly districtService: DistrictService,
+        private readonly notificationService: NotificationService,
     ) { }
 
 
@@ -66,6 +70,7 @@ export class PayoutService {
         }
 
         const updated = await this.payoutRepositoryService.release(payoutId);
+        await this.notifyPayoutReleased(updated!);
         return this.toSummary(updated!);
     }
 
@@ -84,7 +89,25 @@ export class PayoutService {
             return;
         }
 
-        await this.payoutRepositoryService.release((payout._id as Types.ObjectId).toString());
+        const updated = await this.payoutRepositoryService.release((payout._id as Types.ObjectId).toString());
+        await this.notifyPayoutReleased(updated!);
+    }
+
+
+    private async notifyPayoutReleased(payout: PayoutDocument): Promise<void> {
+        const order = await this.orderRepositoryService.findById(payout.orderId.toString());
+        const product = order ? await this.productRepositoryService.findById(order.productId.toString()) : null;
+        if (!product) {
+            return;
+        }
+
+        await this.notificationService.notifyAPI(
+            payout.farmerId.toString(),
+            NotificationType.PAYOUT_RELEASED,
+            { productName: product.name, amount: String(payout.netPayoutAmount) },
+            { type: 'payout', id: (payout._id as Types.ObjectId).toString() },
+            [NotificationChannel.IN_APP, NotificationChannel.SMS],
+        );
     }
 
 

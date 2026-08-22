@@ -1,8 +1,10 @@
 import { Types } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { DeliveryStatus, InventoryStatus, PaymentStatus, PayoutStatus, ProductStatus } from 'src/utils/enum';
+import { DeliveryStatus, InventoryStatus, NotificationType, PaymentStatus, PayoutStatus, ProductStatus } from 'src/utils/enum';
 import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PaymentGatewayService } from 'src/services/payment-gateway-service/payment-gateway.service';
+import { DistrictService } from 'src/services/district-service/district.service';
+import { NotificationService } from 'src/services/notification-service/notification.service';
 import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
 import { BidRepositoryService } from 'src/repositories/bid-repository/bid.repository';
 import { PaymentRepositoryService } from 'src/repositories/payment-repository/payment.repository';
@@ -37,6 +39,8 @@ export class PaymentService {
         private readonly paymentGatewayService: PaymentGatewayService,
         private readonly collectionCenterInventoryRepositoryService: CollectionCenterInventoryRepositoryService,
         private readonly deliveryPartnerProfileRepositoryService: DeliveryPartnerProfileRepositoryService,
+        private readonly districtService: DistrictService,
+        private readonly notificationService: NotificationService,
     ) { }
 
 
@@ -151,6 +155,31 @@ export class PaymentService {
     }
 
 
+    // Reminds a buyer once their payment window has 5 minutes or less left —
+    // requirement.md: "payment window reminder"
+    @Cron(CronExpression.EVERY_30_SECONDS)
+    async sendPaymentWindowReminders(): Promise<void> {
+        const now = new Date();
+        const due = await this.paymentRepositoryService.findDueForReminder(now, 5 * 60 * 1000);
+
+        for (const payment of due) {
+            const product = await this.productRepositoryService.findById(payment.productId.toString());
+            const paymentId = (payment._id as Types.ObjectId).toString();
+            await this.paymentRepositoryService.markReminderSent(paymentId);
+
+            if (product) {
+                const minutesLeft = Math.max(1, Math.round((payment.paymentWindowExpiresAt.getTime() - now.getTime()) / 60000));
+                await this.notificationService.notifyAPI(
+                    payment.buyerId.toString(),
+                    NotificationType.PAYMENT_WINDOW_REMINDER,
+                    { productName: product.name, minutesLeft: String(minutesLeft) },
+                    { type: 'payment', id: paymentId },
+                );
+            }
+        }
+    }
+
+
     private async createPaymentAttempt(sessionId: Types.ObjectId, productId: Types.ObjectId, buyerId: Types.ObjectId, amount: number): Promise<PaymentDocument> {
         const now = new Date();
         return this.paymentRepositoryService.create({
@@ -178,6 +207,15 @@ export class PaymentService {
             this.paymentRepositoryService.findAllBySessionId(sessionId),
             this.productRepositoryService.findById(payment.productId.toString()),
         ]);
+
+        if (product) {
+            await this.notificationService.notifyAPI(
+                payment.buyerId.toString(),
+                NotificationType.PAYMENT_FAILED,
+                { productName: product.name },
+                { type: 'payment', id: paymentId },
+            );
+        }
 
         const triedBuyerIds = new Set(allAttempts.map((attempt) => attempt.buyerId.toString()));
         const nextBid = allBids.find((bid) => !triedBuyerIds.has(bid.buyerId.toString()));
@@ -259,9 +297,33 @@ export class PaymentService {
                 order = assigned;
             }
             await this.deliveryPartnerProfileRepositoryService.incrementActiveOrderCount(partnerProfile.userId.toString());
+
+            await this.notificationService.notifyAPI(
+                partnerProfile.userId.toString(),
+                NotificationType.NEW_ORDER_ASSIGNED,
+                { productName: product.name, city: payment.deliveryAddress.city },
+                { type: 'order', id: (order._id as Types.ObjectId).toString() },
+            );
         } else {
             this.logger.warn(`No available delivery partner in district ${product.districtId.toString()} for order ${(order._id as Types.ObjectId).toString()} — needs manual assignment`);
+
+            const districtAdminId = await this.districtService.getDistrictAdminUserId(product.districtId.toString());
+            if (districtAdminId) {
+                await this.notificationService.notifyAPI(
+                    districtAdminId,
+                    NotificationType.DELIVERY_PARTNER_UNAVAILABLE,
+                    { productName: product.name },
+                    { type: 'order', id: (order._id as Types.ObjectId).toString() },
+                );
+            }
         }
+
+        await this.notificationService.notifyAPI(
+            payment.buyerId.toString(),
+            NotificationType.PAYMENT_SUCCESS,
+            { productName: product.name, amount: String(payment.amount) },
+            { type: 'payment', id: paymentId },
+        );
 
         const settings = await this.platformSettingsRepositoryService.getOrCreate();
         const commissionPercentage = settings.commissionPercentage;

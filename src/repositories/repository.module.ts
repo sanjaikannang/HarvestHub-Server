@@ -18,6 +18,8 @@ import { OrderRepositoryService } from "./order-repository/order.repository";
 import { PayoutRepositoryService } from "./payout-repository/payout.repository";
 import { PlatformSettingsRepositoryService } from "./platform-settings-repository/platform-settings.repository";
 import { DeliveryPartnerProfileRepositoryService } from "./delivery-partner-profile-repository/delivery-partner-profile.repository";
+import { NotificationRepositoryService } from "./notification-repository/notification.repository";
+import { NotificationTemplateRepositoryService } from "./notification-template-repository/notification-template.repository";
 
 // Schemas
 import { User, UserSchema } from "src/schemas/User/user.schema";
@@ -36,6 +38,8 @@ import { Order, OrderSchema } from "src/schemas/Order/order.schema";
 import { Payout, PayoutSchema } from "src/schemas/Payout/payout.schema";
 import { PlatformSettings, PlatformSettingsSchema } from "src/schemas/PlatformSettings/platform-settings.schema";
 import { DeliveryPartnerProfile, DeliveryPartnerProfileSchema } from "src/schemas/DeliveryPartnerProfile/delivery-partner-profile.schema";
+import { Notification, NotificationSchema } from "src/schemas/Notification/notification.schema";
+import { NotificationTemplate, NotificationTemplateSchema } from "src/schemas/NotificationTemplate/notification-template.schema";
 
 // Single aggregator module for every repository in the app — feature modules
 // import this once rather than wiring MongooseModule.forFeature() themselves.
@@ -60,6 +64,8 @@ import { DeliveryPartnerProfile, DeliveryPartnerProfileSchema } from "src/schema
             { name: Payout.name, schema: PayoutSchema },
             { name: PlatformSettings.name, schema: PlatformSettingsSchema },
             { name: DeliveryPartnerProfile.name, schema: DeliveryPartnerProfileSchema },
+            { name: Notification.name, schema: NotificationSchema },
+            { name: NotificationTemplate.name, schema: NotificationTemplateSchema },
         ]),
     ],
     controllers: [],
@@ -80,6 +86,8 @@ import { DeliveryPartnerProfile, DeliveryPartnerProfileSchema } from "src/schema
         PayoutRepositoryService,
         PlatformSettingsRepositoryService,
         DeliveryPartnerProfileRepositoryService,
+        NotificationRepositoryService,
+        NotificationTemplateRepositoryService,
     ],
     exports: [
         UserRepositoryService,
@@ -98,6 +106,8 @@ import { DeliveryPartnerProfile, DeliveryPartnerProfileSchema } from "src/schema
         PayoutRepositoryService,
         PlatformSettingsRepositoryService,
         DeliveryPartnerProfileRepositoryService,
+        NotificationRepositoryService,
+        NotificationTemplateRepositoryService,
     ],
 })
 export class RepositoryModule { }

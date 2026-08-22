@@ -11,6 +11,7 @@ import { InspectionManagementModule } from './inspection-management/inspection-m
 import { CollectionCenterManagementModule } from './collection-center-management/collection-center-management.module';
 import { BiddingEngineModule } from './bidding-engine/bidding-engine.module';
 import { PaymentEscrowModule } from './payment-escrow/payment-escrow.module';
+import { NotificationManagementModule } from './notification-management/notification-management.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PaymentEscrowModule } from './payment-escrow/payment-escrow.module';
     CollectionCenterManagementModule,
     BiddingEngineModule,
     PaymentEscrowModule,
+    NotificationManagementModule,
   ],
   controllers: [],
   providers: [],

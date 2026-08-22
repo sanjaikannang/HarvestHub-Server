@@ -1,9 +1,10 @@
 import { Types } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { BiddingGateway } from 'src/gateways/bidding.gateway';
-import { BiddingOutcome, BiddingSessionStatus, ProductStatus, UserRole } from 'src/utils/enum';
+import { BiddingOutcome, BiddingSessionStatus, NotificationType, ProductStatus, UserRole } from 'src/utils/enum';
 import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { RequestingUser } from 'src/services/district-service/district.service';
+import { NotificationService } from 'src/services/notification-service/notification.service';
 import { UserRepositoryService } from 'src/repositories/user-repository/user.repository';
 import { ProductRepositoryService } from 'src/repositories/product-repository/product.repository';
 import { BidRepositoryService } from 'src/repositories/bid-repository/bid.repository';
@@ -27,6 +28,7 @@ export class BiddingService {
         private readonly userRepositoryService: UserRepositoryService,
         private readonly biddingGateway: BiddingGateway,
         private readonly paymentService: PaymentService,
+        private readonly notificationService: NotificationService,
     ) { }
 
 
@@ -94,8 +96,9 @@ export class BiddingService {
                 status: outcome === BiddingOutcome.SOLD ? ProductStatus.SOLD : ProductStatus.UNSOLD,
             });
 
+            const product = await this.productRepositoryService.findById(productId);
+
             if (outcome === BiddingOutcome.SOLD) {
-                const product = await this.productRepositoryService.findById(productId);
                 const quantity = product?.verifiedQuantity ?? product?.estimatedQuantity ?? 0;
 
                 await this.paymentService.openPaymentWindowAPI(
@@ -104,6 +107,28 @@ export class BiddingService {
                     session.currentHighestBid!.bidderId.toString(),
                     session.currentHighestBid!.amount,
                     quantity,
+                );
+
+                if (product) {
+                    await this.notificationService.notifyAPI(
+                        session.currentHighestBid!.bidderId.toString(),
+                        NotificationType.BID_WON,
+                        { productName: product.name, amount: String(session.currentHighestBid!.amount) },
+                        { type: 'product', id: productId },
+                    );
+                    await this.notificationService.notifyAPI(
+                        product.farmerId.toString(),
+                        NotificationType.PRODUCT_SOLD,
+                        { productName: product.name, amount: String(session.currentHighestBid!.amount) },
+                        { type: 'product', id: productId },
+                    );
+                }
+            } else if (product) {
+                await this.notificationService.notifyAPI(
+                    product.farmerId.toString(),
+                    NotificationType.PRODUCT_UNSOLD,
+                    { productName: product.name },
+                    { type: 'product', id: productId },
                 );
             }
 
@@ -178,6 +203,7 @@ export class BiddingService {
         const bidId = new Types.ObjectId();
         const placedAt = new Date();
         const sessionId = (session._id as Types.ObjectId).toString();
+        const previousHighestBidderId = session.currentHighestBid?.bidderId.toString();
 
         // Atomic, race-condition-safe against the current highest bid — see
         // BiddingSessionRepositoryService.tryPlaceBid. A null result means
@@ -185,6 +211,15 @@ export class BiddingService {
         const updatedSession = await this.sessionRepositoryService.tryPlaceBid(sessionId, amount, buyerId, bidId, placedAt);
         if (!updatedSession) {
             throw new ConflictException('Someone just placed a higher bid — refresh and try again');
+        }
+
+        if (previousHighestBidderId && previousHighestBidderId !== buyerId) {
+            await this.notificationService.notifyAPI(
+                previousHighestBidderId,
+                NotificationType.OUTBID_ALERT,
+                { productName: product.name, newBidAmount: String(amount) },
+                { type: 'product', id: productId },
+            );
         }
 
         await this.bidRepositoryService.create({
